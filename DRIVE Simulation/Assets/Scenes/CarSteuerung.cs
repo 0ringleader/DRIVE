@@ -1,18 +1,26 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class CarSteuerung : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public float speed = 10.0f;
+    public float steering = 0.0f;
+
+    private Rigidbody rb;
+
     void Start()
     {
-        
+        rb = GetComponent<Rigidbody>();
     }
 
-    // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
-        
+        // Move the car forward
+        Vector3 movement = transform.forward * speed * Time.fixedDeltaTime;
+        rb.MovePosition(rb.position + movement);
+
+        // Turn the car
+        float turn = steering * Time.fixedDeltaTime;
+        Quaternion turnRotation = Quaternion.Euler(0, turn, 0);
+        rb.MoveRotation(rb.rotation * turnRotation);
     }
 }
