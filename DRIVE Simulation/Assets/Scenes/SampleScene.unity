@@ -132,6 +132,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3865759}
   - component: {fileID: 3865760}
+  - component: {fileID: 3865761}
   m_Layer: 0
   m_Name: VRCollider
   m_TagString: Untagged
@@ -165,10 +166,10 @@ WheelCollider:
   m_Center: {x: 0, y: 0, z: 0}
   m_Radius: 0.032
   m_SuspensionSpring:
-    spring: 35000
-    damper: 4500
+    spring: 50
+    damper: 25
     targetPosition: 0.5
-  m_SuspensionDistance: 0
+  m_SuspensionDistance: 0.007
   m_ForceAppPointDistance: 0
   m_Mass: 0.03
   m_WheelDampingRate: 0.25
@@ -193,6 +194,22 @@ WheelCollider:
   m_LayerOverridePriority: 0
   m_Enabled: 1
   m_ProvidesContacts: 0
+--- !u!114 &3865761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3865758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc9b9d5ec23d435a8acf5fbed1e04ee7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wheelModel: {fileID: 1438793766}
+  WheelCollider: {fileID: 0}
+  steerable: 1
+  motorized: 0
 --- !u!1 &62118336
 GameObject:
   m_ObjectHideFlags: 0
@@ -295,6 +312,7 @@ GameObject:
   m_Component:
   - component: {fileID: 213955485}
   - component: {fileID: 213955486}
+  - component: {fileID: 213955487}
   m_Layer: 0
   m_Name: VLCollider
   m_TagString: Untagged
@@ -328,10 +346,10 @@ WheelCollider:
   m_Center: {x: 0, y: 0, z: 0}
   m_Radius: 0.032
   m_SuspensionSpring:
-    spring: 35000
-    damper: 4500
+    spring: 50
+    damper: 25
     targetPosition: 0.5
-  m_SuspensionDistance: 0
+  m_SuspensionDistance: 0.007
   m_ForceAppPointDistance: 0
   m_Mass: 0.03
   m_WheelDampingRate: 0.25
@@ -356,6 +374,22 @@ WheelCollider:
   m_LayerOverridePriority: 0
   m_Enabled: 1
   m_ProvidesContacts: 0
+--- !u!114 &213955487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 213955484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc9b9d5ec23d435a8acf5fbed1e04ee7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wheelModel: {fileID: 1103117513}
+  WheelCollider: {fileID: 0}
+  steerable: 1
+  motorized: 0
 --- !u!1 &377360710
 GameObject:
   m_ObjectHideFlags: 0
@@ -542,6 +576,16 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!4 &714502222 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3489359493230100275, guid: a52ef036904f40186aa13c3a5255e6f6, type: 3}
+  m_PrefabInstance: {fileID: 1470698343}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &772844453 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1422159595052244891, guid: a52ef036904f40186aa13c3a5255e6f6, type: 3}
+  m_PrefabInstance: {fileID: 1470698343}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &795969098
 GameObject:
   m_ObjectHideFlags: 0
@@ -880,6 +924,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c16220278ff62fef7a2970d6d84566b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!4 &1103117513 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5778778867099547538, guid: a52ef036904f40186aa13c3a5255e6f6, type: 3}
+  m_PrefabInstance: {fileID: 1470698343}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1438793766 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -2627598464469829831, guid: a52ef036904f40186aa13c3a5255e6f6, type: 3}
+  m_PrefabInstance: {fileID: 1470698343}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1454873638
 GameObject:
   m_ObjectHideFlags: 0
@@ -890,6 +944,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1454873639}
   - component: {fileID: 1454873640}
+  - component: {fileID: 1454873641}
   m_Layer: 0
   m_Name: HRCollider
   m_TagString: Untagged
@@ -923,10 +978,10 @@ WheelCollider:
   m_Center: {x: 0, y: 0, z: 0}
   m_Radius: 0.032
   m_SuspensionSpring:
-    spring: 35000
-    damper: 4500
+    spring: 50
+    damper: 25
     targetPosition: 0.5
-  m_SuspensionDistance: 0
+  m_SuspensionDistance: 0.007
   m_ForceAppPointDistance: 0
   m_Mass: 0.03
   m_WheelDampingRate: 0.25
@@ -951,6 +1006,22 @@ WheelCollider:
   m_LayerOverridePriority: 0
   m_Enabled: 1
   m_ProvidesContacts: 0
+--- !u!114 &1454873641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1454873638}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc9b9d5ec23d435a8acf5fbed1e04ee7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wheelModel: {fileID: 772844453}
+  WheelCollider: {fileID: 0}
+  steerable: 0
+  motorized: 1
 --- !u!1001 &1470698343
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1028,6 +1099,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: a52ef036904f40186aa13c3a5255e6f6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1470698348}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: a52ef036904f40186aa13c3a5255e6f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1470698349}
   m_SourcePrefab: {fileID: 100100000, guid: a52ef036904f40186aa13c3a5255e6f6, type: 3}
 --- !u!1 &1470698344 stripped
 GameObject:
@@ -1092,6 +1166,24 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1470698349
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1470698344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8c7d53692e4ee383aaea9434763ef5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  motorTorque: 2000
+  brakeTorque: 2000
+  maxSpeed: 20
+  steeringRange: 30
+  steeringRangeAtMaxSpeed: 10
+  centreOfGravityOffset: -1
 --- !u!1 &1558457771
 GameObject:
   m_ObjectHideFlags: 0
@@ -1235,6 +1327,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1810809398}
   - component: {fileID: 1810809399}
+  - component: {fileID: 1810809400}
   m_Layer: 0
   m_Name: HLCollider
   m_TagString: Untagged
@@ -1268,10 +1361,10 @@ WheelCollider:
   m_Center: {x: 0, y: 0, z: 0}
   m_Radius: 0.032
   m_SuspensionSpring:
-    spring: 35000
-    damper: 4500
+    spring: 50
+    damper: 25
     targetPosition: 0.5
-  m_SuspensionDistance: 0
+  m_SuspensionDistance: 0.007
   m_ForceAppPointDistance: 0
   m_Mass: 0.03
   m_WheelDampingRate: 0.25
@@ -1296,6 +1389,22 @@ WheelCollider:
   m_LayerOverridePriority: 0
   m_Enabled: 1
   m_ProvidesContacts: 0
+--- !u!114 &1810809400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1810809397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc9b9d5ec23d435a8acf5fbed1e04ee7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wheelModel: {fileID: 714502222}
+  WheelCollider: {fileID: 0}
+  steerable: 0
+  motorized: 1
 --- !u!1 &1810960033
 GameObject:
   m_ObjectHideFlags: 0
