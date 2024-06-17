@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="joy.js"></script>
+    <title>RC Control Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9, user-scalable=no">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevents scrolling */
+        }
+        #videoContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #videoStream {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Changed from 'cover' to 'contain' */
+        }
+        .bottom-right-container {
+            position: absolute;
+            bottom: 20px; /* Adjust based on desired distance from the bottom */
+            right: 20px; /* Adjust based on desired distance from the right */
+            width: 400px;
+            height: 400px;
+        }
+        #controlSwitch {
+            position: absolute;
+            top: 25px;
+            left: 20px;
+            z-index: 1; /* Stellt sicher, dass die Checkbox über dem Text liegt */
+        }
+        label[for="controlSwitch"] {
+            color: white;
+            font-size: 1.5em;
+            position: absolute;
+            top: 20px;
+            left: 50px; /* Passt die Position des Texts an, damit er neben der Checkbox liegt */
+        }
+        
+    </style>
+</head>
+
+<body style="background-color: rgb(25,25,25);">
+    
+    <div id="videoContainer">
+        <image id="videoStream" autoplay muted loop src="/stream"></image>
+    </div>
+    <div id="joyDiv" class="bottom-right-container"></div>
+    <!-- Add a checkbox for switching between joystick and keyboard control -->
+    <label for="controlSwitch">Use keyboard control:</label>
+    <input type="checkbox" id="controlSwitch">
+    
+</body>
+
+<script type="text/javascript">
+    // Create JoyStick object into the DIV 'joyDiv'
+    var joy = new JoyStick('joyDiv');
+
+    const controlSwitch = document.getElementById('controlSwitch');
+    
+
+    // Update the values of the X and Y axis on move of the joystick
+    //BRAUEN WIR DAS ÜBERHAUPT!!!!!!!!!!!!! HALLO????? DAS KANN DOCH DIREKT IN SENDJOYSTICKVALUES REIN; ALSO WIRKLICH!!!!!!!!!!!!!!!!!!!!!!!!
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    function getJoystickValues() {
+        return {
+            x: joy.GetX(),
+            y: joy.GetY()
+        };
+    }
+
+    // Function to send joystick values to the server
+    // Function to send joystick values to the server
+    function sendJoystickValues() {
+        const controlSwitch = document.getElementById('controlSwitch');
+        let data;
+        if (!controlSwitch.checked) {
+            // If the checkbox is checked, send keyboard values
+            data = {
+                speed: window.speed || 0,
+                angle: window.angle || 0
+            };
+        } else {
+            // If the checkbox is not checked, send joystick values
+            const values = {
+                x: joy.GetX(),
+                y: joy.GetY()
+            };
+            data = {
+                speed: Math.floor((values.y / 100) * 100), // Convert to range 0-255
+                angle: Math.floor(values.x)
+            };
+        }
+
+        fetch('/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                console.error('Failed to send joystick values:', response.statusText);
+            }
+        })
+        .catch(error => {
+            console.error('Error sending joystick values:', error);
+        });
+    }
+
+    // Send joystick values every 100ms
+    setInterval(sendJoystickValues, 100);
+
+     // Add keydown event listener
+     window.addEventListener('keydown', function(event) {
+        switch (event.key) {
+            case 'w':
+                window.speed = 100;
+                break;
+            case 'a':
+                window.angle = -100;
+                break;
+            case 's':
+                window.speed = -100;
+                break;
+            case 'd':
+                window.angle = 100;
+                break;
+        }
+    });
+
+    // Add keyup event listener
+    window.addEventListener('keyup', function(event) {
+        switch (event.key) {
+            case 'w':
+            case 's':
+                window.speed = 0;
+                break;
+            case 'a':
+            case 'd':
+                window.angle = 0;
+                break;
+        }
+    });
+</script>
+</html>
