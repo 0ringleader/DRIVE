@@ -12,8 +12,8 @@ public class WheelControl : MonoBehaviour
     public bool steerable;
     public bool motorized;
 
-    Vector3 position;
-    Quaternion rotation;
+    private Vector3 position;
+    private Quaternion rotation;
 
     // Start is called before the first frame update
     private void Start()
@@ -22,13 +22,13 @@ public class WheelControl : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
         // Get the Wheel collider's world pose values
         WheelCollider.GetWorldPose(out position, out rotation);
 
         // Define the additional rotation to correct the wheel model's orientation
-        Quaternion additionalRotation = Quaternion.Euler(0, 0, 270); // Adjust these values as needed
+        var additionalRotation = Quaternion.Euler(0, 0, 270); // Adjust these values as needed
 
         // Apply the additional rotation
         rotation *= additionalRotation;
