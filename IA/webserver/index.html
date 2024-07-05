@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Speed and Steering</title>
+    <style>
+        #speed, #steering {
+            font-size: 2em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="speed"></div>
+    <div id="steering"></div>
+
+    <p>Steuern Sie das Auto mit den Pfeiltasten links, rechts, oben und unten.</p>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('speed', (speed) => {
+            document.getElementById('speed').textContent = `Speed: ${speed}`;
+        });
+
+        socket.on('steering', (steering) => {
+            document.getElementById('steering').textContent = `Steering: ${steering}`;
+        });
+
+        document.addEventListener('keydown', (event) => {
+            socket.emit('keydown', event.key);
+        });
+    </script>
+</body>
+</html>
