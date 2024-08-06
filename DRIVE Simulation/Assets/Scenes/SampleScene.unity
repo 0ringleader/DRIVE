@@ -1086,9 +1086,10 @@ MonoBehaviour:
   targetSteering: 0
   frontWheelLeft: {fileID: 253149624}
   frontWheelRight: {fileID: 1162024252}
-  steeringMotorSpeed: 20
-  accelerationRate: 1.5
-  brakingRate: 10
+  steeringMotorSpeed: 140
+  accelerationRate: 1.2
+  brakingRate: 2
+  isControlledByWebsite: 1
 --- !u!54 &1125947879
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1149,11 +1150,25 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1125947877}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 89224cafa02423a4ebdc4c5e4a13962b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  carController: {fileID: 1125947878}
+--- !u!114 &1125947883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125947877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb48358ad45f30c81b3738048c06b156, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  port: 8000
   carController: {fileID: 1125947878}
 --- !u!4 &1162024252 stripped
 Transform:
@@ -1170,6 +1185,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1356931971}
   - component: {fileID: 1356931973}
+  - component: {fileID: 1356931977}
   - component: {fileID: 1356931972}
   - component: {fileID: 1356931976}
   m_Layer: 0
@@ -1263,6 +1279,18 @@ MonoBehaviour:
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8102569fac9bab85d9a46c189a14a001, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1356931977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1356931970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 063ef4cf4f6cfeaa7b36efa3f9bf933f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!4 &1438793766 stripped
@@ -2414,6 +2442,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 83b85785a5e8058cabae69ad8a4142d6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1125947882}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 83b85785a5e8058cabae69ad8a4142d6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1125947883}
     - targetCorrespondingSourceObject: {fileID: -8818561872519787431, guid: 83b85785a5e8058cabae69ad8a4142d6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 668443697}

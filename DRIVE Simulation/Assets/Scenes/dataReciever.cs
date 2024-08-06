@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 [System.Serializable]
-public class ControlValues
+public class ControlValues2
 {
     public float speed;
     public float steering;
@@ -25,7 +25,7 @@ public class dataReciever : MonoBehaviour
     IEnumerator RequestControlValues()
     {
         isRequesting = true;
-        string url = "http://localhost:3000/values";
+        string url = "http://localhost:8000";
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
         {
             yield return webRequest.SendWebRequest();
@@ -36,7 +36,7 @@ public class dataReciever : MonoBehaviour
             }
             else
             {
-                ControlValues values = JsonUtility.FromJson<ControlValues>(webRequest.downloadHandler.text);
+                ControlValues2 values = JsonUtility.FromJson<ControlValues2>(webRequest.downloadHandler.text);
                 carController.SetControlValues(values.speed, values.steering); 
             }
         }

@@ -3,12 +3,13 @@ using UnityEngine.Serialization;
 
 public class CustomCarController : MonoBehaviour
 {
+    public float actualSpeed;
     public float targetSpeed; // Geschwindigkeitsvariable
     public float targetSteering; // Lenkvariable
     public Transform frontWheelLeft;
     public Transform frontWheelRight;
-    private readonly float maxSpeed = 5.0f;
-    private readonly float maxSteering = 30.0f;
+    private readonly float maxSpeed = 0.8f;
+    private readonly float maxSteering = 19.0f;
     private readonly float wheelbase = 0.1375f;
     private float steering = 0.0f;
     private float speed = 0.0f;
@@ -75,8 +76,8 @@ public class CustomCarController : MonoBehaviour
         if (isControlledByWebsite)
         {
             Debug.Log($"Setting control values - Speed: {speed}, Steering: {steering}");
-            targetSpeed = MapValue(speed, -1, 1, -maxSpeed, maxSpeed);
-            targetSteering = MapValue(steering, -1, 1, -maxSteering, maxSteering);
+            targetSpeed = MapValue(speed, -100, 100, -maxSpeed, maxSpeed);
+            targetSteering = MapValue(steering, -100, 100, -maxSteering, maxSteering);
 
         }
     }
