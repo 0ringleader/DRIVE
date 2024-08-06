@@ -1,4 +1,4 @@
-#Yet to be finished
+#setVariables.py edited 0608 @3:25PM
 
 import configparser
 import os
