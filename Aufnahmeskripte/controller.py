@@ -1,4 +1,4 @@
-#controller.py edited 3:50PM 2607
+#controller.py edited 0608 @3:25PM
 
 import pygame
 import time
@@ -8,15 +8,27 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import Button
 import threading
 import numpy as np
+from set_variables import SetVariables  # Import der SetVariables-Klasse für das Setzen der Variablen
 
 
 class XboxController:
-    def __init__(self, plot_controller_inputs=True):
+    def __init__(self, config_section='controller.py', plot_controller_inputs=True):
+        # Lade Konfiguration
+        config_loader = SetVariables()
+        config = config_loader.get_variables(config_section)
+
+        # Konfigurationsvariablen aus der Datei laden oder Standardwerte setzen
+        self.detect_d_pad_inputs = config.get('detect_d_pad_inputs', True)
+        self.plot_controller_inputs = config.get('plot_controller_inputs', plot_controller_inputs)
+        self.csv_filename = config.get('csv_filename', "xbox_controller_data.csv")
+        self.time_window = config.get('time_window', 10)  # Sekunden für das Zeitfenster des Plots
+        self.update_interval = config.get('update_interval', 0.05)  # Intervall für das Plot-Update in Sekunden
+        self.sleep_interval = config.get('sleep_interval', 0.01)  # Wartezeit zwischen den Datenupdates in Sekunden
+
+        # Initialisiere Pygame und Controller
         pygame.init()
         pygame.joystick.init()
 
-        self.detect_d_pad_inputs = True
-        self.plot_controller_inputs = plot_controller_inputs
         self.stop_event = threading.Event()
         self.lock = threading.Lock()
 
@@ -31,8 +43,8 @@ class XboxController:
         self.num_axes = self.joystick.get_numaxes()
         self.num_buttons = self.joystick.get_numbuttons()
 
-        self.filename = "xbox_controller_data.csv"
-        self.file = open(self.filename, "w", newline='')
+        # Initialisiere CSV-Datei
+        self.file = open(self.csv_filename, "w", newline='')
         self.csv_writer = csv.writer(self.file)
 
         self.csv_writer.writerow(
@@ -48,8 +60,6 @@ class XboxController:
 
     def initialize_plot(self):
         if self.plot_controller_inputs:
-            self.time_window = 10  # seconds
-            self.update_interval = 0.05  # 50 ms
             self.data_points = int(self.time_window / self.update_interval)
 
             self.timestamps = np.linspace(0, self.time_window, self.data_points)
@@ -92,7 +102,7 @@ class XboxController:
             button = Button(ax_button, 'Stop')
             button.on_clicked(self.stop_program)
 
-            self.ani = FuncAnimation(self.fig, self.update_plot, frames=None, interval=50, blit=True,
+            self.ani = FuncAnimation(self.fig, self.update_plot, frames=None, interval=self.update_interval * 1000, blit=True,
                                      cache_frame_data=False)
 
     def stop_program(self, _event=None):
@@ -122,7 +132,7 @@ class XboxController:
                         self.dpad_data[i][-1] = dpad[i] if i < len(dpad) else 0
 
             self.csv_writer.writerow([time.time() - self.start_time] + axes[:4] + axes[4:6] + dpad)
-            time.sleep(0.01)
+            time.sleep(self.sleep_interval)
 
     def update_plot(self, _frame):
         current_time = time.time() - self.start_time
