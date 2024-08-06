@@ -1,3 +1,5 @@
+#precalc.py edited 0608 @11:40PM by Sven
+
 import cv2
 import numpy as np
 import os
