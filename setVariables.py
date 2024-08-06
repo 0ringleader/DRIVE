@@ -1,4 +1,5 @@
 #setVariables.py edited 0608 @3:25PM
+#not finished yet!
 
 import configparser
 import os
