@@ -1,4 +1,4 @@
-#precalc.py edited 0608 @11:40PM by Sven
+#precalc.py edited 0708 @3PM by Sven
 
 import cv2
 import numpy as np
