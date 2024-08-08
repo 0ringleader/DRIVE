@@ -3,7 +3,6 @@ using UnityEngine.Serialization;
 
 public class CustomCarController : MonoBehaviour
 {
-    public float actualSpeed;
     public float targetSpeed; // Geschwindigkeitsvariable
     public float targetSteering; // Lenkvariable
     public Transform frontWheelLeft;

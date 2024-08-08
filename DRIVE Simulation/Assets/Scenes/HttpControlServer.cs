@@ -11,7 +11,7 @@ public class ControlValues
     public float angle;
 }
 
-public class HttpServer : MonoBehaviour
+public class HttpControlServer : MonoBehaviour
 {
     private HttpListener listener;
     private Thread listenerThread;

@@ -6,7 +6,7 @@ using System.Threading;
 using System;
 using System.IO;
 
-public class MjpegStream : MonoBehaviour
+public partial class MjpegStream : MonoBehaviour
 {
     public Camera cameraToUse;
     private UdpClient udpClient;
