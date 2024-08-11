@@ -1,4 +1,4 @@
-#neuronal net.py edited 1108 @9:20PM by Sven
+#neuronal net.py edited 1108 @11:50PM by Sven
 #Code implements a CNN
 
 import numpy as np
@@ -18,9 +18,6 @@ import time
 import logging
 from setVariables import SetVariables, replySetVariables
 
-# Initialize logging
-logging.basicConfig(filename='training_log.txt', level=logging.INFO, format='%(message)s')
-
 # Load configuration variables
 config = SetVariables('config.ini')
 variables = config.get_variables('neuronalnet.py')
@@ -37,17 +34,22 @@ xSize = variables.get('xSize', 256)  # Default to 256 if not found
 ySize = variables.get('ySize', 192)  # Default to 192 if not found
 patience = variables.get('patience', 10)  # Default to 10 if not found
 
+# Generate filename with hyperparameters
+filename_suffix = f"_lr{learning_rate}_bs{batch_size}_dr{dropout_rate}_pat{patience}_ep{epochs}"
+log_file = f'training_log{filename_suffix}.txt'
+
+# Initialize logging
+logging.basicConfig(filename=log_file, level=logging.INFO, format='%(message)s')
+
 # Use xSize and ySize when defining input_shape
 input_shape = (ySize, xSize, 3)  # Assuming 3 color channels
 
 replySetVariables('neuronalnet.py')
 
-
 # Function to print debug messages
 def dbg_print(message):
     if print_console:
         print(message)
-
 
 # Function to pause training
 def pause_training():
@@ -55,20 +57,17 @@ def pause_training():
     PAUSE_TRAINING = True
     dbg_print("\nTraining paused. Press Enter to resume.")
 
-
 # Function to resume training
 def resume_training():
     global PAUSE_TRAINING
     PAUSE_TRAINING = False
     dbg_print("\nTraining resumed.")
 
-
 # Function to stop training
 def stop_training():
     global STOP_TRAINING
     STOP_TRAINING = True
     dbg_print("\nTraining stopped.")
-
 
 # Function to load and preprocess data from multiple folders
 def load_behavioral_cloning_dataset(data_dir):
@@ -100,7 +99,6 @@ def load_behavioral_cloning_dataset(data_dir):
 
     return data
 
-
 # Function to preprocess a single image
 def preprocess_image(img_path):
     with Image.open(img_path) as img:
@@ -108,7 +106,6 @@ def preprocess_image(img_path):
         img = img.convert("RGB")
         image = np.array(img)
     return image / 255.0
-
 
 # Function to create a dataset from the DataFrame
 def create_dataset(df, batch_size, is_training=True):
@@ -128,7 +125,6 @@ def create_dataset(df, batch_size, is_training=True):
     dataset = tf.data.Dataset.from_generator(generator, output_types=(tf.float32, tf.float32),
                                              output_shapes=((ySize, xSize, 3), ()))
     if is_training:
-        # Define shuffle buffer size
         dataset = dataset.shuffle(buffer_size=10000)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
@@ -162,17 +158,17 @@ def save_model(model, path='model.h5'):
     model.save(path)
     dbg_print(f"Model saved to {path}")
 
-
-def log_training_progress(message, log_file='training_log.txt', metrics=None):
+def log_training_progress(message, log_file, metrics=None):
     if metrics is not None:
-        logging.info(f"Epoch {metrics['epoch']:03d}: "
-                     f"- loss: {metrics['loss']:.4f} - mean_absolute_error: {metrics['mean_absolute_error']:.4f} "
-                     f"- val_loss: {metrics['val_loss']:.4f} - val_mean_absolute_error: {metrics['val_mean_absolute_error']:.4f}")
-    logging.info(message)
+        with open(log_file, 'a') as f:
+            f.write(f"Epoch {metrics['epoch']:03d}: "
+                        f"- loss: {metrics['loss']:.4f} - mean_absolute_error: {metrics['mean_absolute_error']:.4f} "
+                        f"- val_loss: {metrics['val_loss']:.4f} - val_mean_absolute_error: {metrics['val_mean_absolute_error']:.4f}\n")
+    with open(log_file, 'a') as f:
+        f.write(message + "\n")
     dbg_print(message)
 
-
-def load_log_data(log_file='training_log.txt'):
+def load_log_data(log_file):
     if not os.path.exists(log_file):
         return []
 
@@ -180,7 +176,6 @@ def load_log_data(log_file='training_log.txt'):
         training_logs = f.readlines()
 
     return training_logs
-
 
 class CustomCallback(tf.keras.callbacks.Callback):
     def __init__(self, log_file, total_time):
@@ -202,7 +197,6 @@ class CustomCallback(tf.keras.callbacks.Callback):
         log_message = f" Time elapsed for epoch: {epoch_time:.2f}s"
         log_training_progress(log_message, self.log_file, metrics=metrics)
 
-
 def train_model(model, train_gen, val_gen, train_data_len, val_data_len, epochs, initial_epoch=0, total_time=0.0):
     start_time = time.time()
     steps_per_epoch = train_data_len // batch_size
@@ -210,7 +204,7 @@ def train_model(model, train_gen, val_gen, train_data_len, val_data_len, epochs,
 
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
     model_checkpoint = tf.keras.callbacks.ModelCheckpoint('best_model.h5', monitor='val_loss', save_best_only=True)
-    custom_callback = CustomCallback('training_log.txt', start_time)
+    custom_callback = CustomCallback(log_file, start_time)
 
     history = model.fit(train_gen, epochs=epochs, validation_data=val_gen, steps_per_epoch=steps_per_epoch,
                         validation_steps=validation_steps, verbose=1,
@@ -220,10 +214,8 @@ def train_model(model, train_gen, val_gen, train_data_len, val_data_len, epochs,
 
     return history, total_time
 
-
 def safe_extract(metrics_part, key):
     try:
-        # Use regex to extract the value by ignoring the trailing time information.
         import re
         pattern = re.compile(rf"{key}: (?P<value>\d+\.\d+)")
         match = pattern.search(metrics_part)
@@ -234,7 +226,6 @@ def safe_extract(metrics_part, key):
     except (IndexError, ValueError):
         dbg_print(f"Warning: {key} could not be extracted from: '{metrics_part}'.")
         return None
-
 
 def plot_training_progress(training_logs):
     train_losses = []
@@ -258,13 +249,11 @@ def plot_training_progress(training_logs):
                 train_maes.append(mae)
                 val_maes.append(val_mae)
 
-    # Calculate the derivatives (differences)
     d_train_losses = np.diff(train_losses)
     d_val_losses = np.diff(val_losses)
     d_train_maes = np.diff(train_maes)
     d_val_maes = np.diff(val_maes)
 
-    # Debug output
     dbg_print(f"Training Losses: {train_losses}")
     dbg_print(f"Validation Losses: {val_losses}")
     dbg_print(f"Training MAEs: {train_maes}")
@@ -273,7 +262,6 @@ def plot_training_progress(training_logs):
     epochs = range(1, len(train_losses) + 1)
     plt.figure(figsize=(12, 10))
 
-    # Plot Training and Validation Loss
     plt.subplot(2, 2, 1)
     plt.plot(epochs, train_losses, 'r--', label='Training Loss')
     plt.plot(epochs, val_losses, 'b-', label='Validation Loss')
@@ -282,7 +270,6 @@ def plot_training_progress(training_logs):
     plt.ylabel('Loss')
     plt.legend()
 
-    # Plot Training and Validation MAE
     plt.subplot(2, 2, 2)
     plt.plot(epochs, train_maes, 'r--', label='Training MAE')
     plt.plot(epochs, val_maes, 'b-', label='Validation MAE')
@@ -291,7 +278,6 @@ def plot_training_progress(training_logs):
     plt.ylabel('MAE')
     plt.legend()
 
-    # Plot the derivatives for Loss
     plt.subplot(2, 2, 3)
     plt.plot(range(1, len(d_train_losses) + 1), d_train_losses, 'r--', label='Training Loss Derivative')
     plt.plot(range(1, len(d_val_losses) + 1), d_val_losses, 'b-', label='Validation Loss Derivative')
@@ -300,7 +286,6 @@ def plot_training_progress(training_logs):
     plt.ylabel('Delta Loss')
     plt.legend()
 
-    # Plot the derivatives for MAE
     plt.subplot(2, 2, 4)
     plt.plot(range(1, len(d_train_maes) + 1), d_train_maes, 'r--', label='Training MAE Derivative')
     plt.plot(range(1, len(d_val_maes) + 1), d_val_maes, 'b-', label='Validation MAE Derivative')
@@ -310,14 +295,14 @@ def plot_training_progress(training_logs):
     plt.legend()
 
     plt.tight_layout()
+
+    # Save the plot with parameters in the filename
+    plt.savefig(f"training_progress{filename_suffix}.png")
     plt.show()
 
-
 def main():
-    # Check for GPU availability
     dbg_print("Num GPUs Available: " + str(len(tf.config.experimental.list_physical_devices('GPU'))))
 
-    # Configure GPU memory growth
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if gpus:
         try:
@@ -327,14 +312,11 @@ def main():
             dbg_print(e)
 
     model_path = 'model.h5'
-    log_file = 'training_log.txt'
 
-    # Load images and steering data from all subfolders
     data = load_behavioral_cloning_dataset(data_dir)
 
     if data.empty:
-        dbg_print(
-            "No data was loaded. Please check the dataset directory and ensure it contains CSV files with image paths.")
+        dbg_print("No data was loaded. Please check the dataset directory and ensure it contains CSV files with image paths.")
         return
 
     train_data, val_data = train_test_split(data, test_size=validation_split, random_state=42)
@@ -342,7 +324,6 @@ def main():
     train_gen = create_dataset(train_data, batch_size, is_training=True)
     val_gen = create_dataset(val_data, batch_size, is_training=False)
 
-    # Check if model file exists. If not, create a new model
     if os.path.exists(model_path):
         try:
             model = tf.keras.models.load_model(model_path)
@@ -353,33 +334,23 @@ def main():
             model = create_model(input_shape)
     else:
         model = create_model(input_shape)
-        model.save(model_path)  # Save the newly created model to avoid FileNotFoundError in the future
+        model.save(model_path)
         dbg_print(f"Created and saved a new model to {model_path}")
 
-    # Compile the model
     model.compile(optimizer=Adam(learning_rate=learning_rate), loss=MeanSquaredError(), metrics=[MeanAbsoluteError()])
 
-    # Print model summary
     model.summary()
 
-    # Initialize training logs (clear the log file)
     open(log_file, 'w').close()
 
-    # Training loop
     with tf.device('/GPU:0'):
         history, total_time = train_model(model, train_gen, val_gen, len(train_data), len(val_data), epochs, 0, 0.0)
 
-    # Save model after training, overwriting the existing model file
     model.save(model_path)
     dbg_print(f"Model saved to {model_path}")
 
-    # Save training progress
-    log_training_progress(f"Training progress saved. Epoch {epochs}/{epochs}.", log_file)
-
-    # Plot accuracy and loss over epochs
     training_logs = load_log_data(log_file)
     plot_training_progress(training_logs)
-
 
 if __name__ == "__main__":
     main()
