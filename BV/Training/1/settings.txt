@@ -1,0 +1,29 @@
+[precalc.py]
+xsize=256
+ysize=192
+edge_strength=1.0
+noise_h=10
+noise_hcolor=10
+noise_templatewindowsize=7
+noise_searchwindowsize=21
+canny_threshold1=50
+canny_threshold2=150
+clahe_cliplimit=3.0
+clahe_tilegridsize=(8, 8)
+analyzeimages=true
+overrideimages=false
+n_clusters=3
+
+[neuronalnet.py]
+learning_rate=0.001
+epochs=50
+printConsole=true
+batch_size=32
+validation_split=0.2
+l1_reg=0.0
+l2_reg=0.0
+dropout_rate=0.12
+data_dir=F:\\Einige Dateien\\DRIVE\\PreCalcOut\\
+xSize=256
+ySize=192
+patience = 10
