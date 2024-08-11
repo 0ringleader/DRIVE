@@ -1,0 +1,63 @@
+Epoch 001: - loss: 877.9147 - mean_absolute_error: 21.5340 - val_loss: 1809.4753 - val_mean_absolute_error: 28.9439
+ Time elapsed for epoch: 65.37s
+Epoch 002: - loss: 566.7136 - mean_absolute_error: 16.9348 - val_loss: 851.3702 - val_mean_absolute_error: 20.5398
+ Time elapsed for epoch: 42.96s
+Epoch 003: - loss: 451.2989 - mean_absolute_error: 15.1991 - val_loss: 644.6870 - val_mean_absolute_error: 17.6936
+ Time elapsed for epoch: 43.45s
+Epoch 004: - loss: 389.1438 - mean_absolute_error: 13.6848 - val_loss: 548.7800 - val_mean_absolute_error: 16.6761
+ Time elapsed for epoch: 43.76s
+Epoch 005: - loss: 349.9944 - mean_absolute_error: 12.9232 - val_loss: 429.6677 - val_mean_absolute_error: 14.1342
+ Time elapsed for epoch: 43.58s
+Epoch 006: - loss: 283.5789 - mean_absolute_error: 11.6145 - val_loss: 390.7253 - val_mean_absolute_error: 13.6206
+ Time elapsed for epoch: 43.84s
+Epoch 007: - loss: 270.6857 - mean_absolute_error: 11.3563 - val_loss: 488.1763 - val_mean_absolute_error: 14.6724
+ Time elapsed for epoch: 46.04s
+Epoch 008: - loss: 252.6481 - mean_absolute_error: 10.6721 - val_loss: 416.1030 - val_mean_absolute_error: 13.6125
+ Time elapsed for epoch: 43.81s
+Epoch 009: - loss: 232.7972 - mean_absolute_error: 10.3176 - val_loss: 415.9704 - val_mean_absolute_error: 14.0673
+ Time elapsed for epoch: 43.47s
+Epoch 010: - loss: 221.3764 - mean_absolute_error: 10.0566 - val_loss: 376.5628 - val_mean_absolute_error: 12.9231
+ Time elapsed for epoch: 43.71s
+Epoch 011: - loss: 196.5961 - mean_absolute_error: 9.4618 - val_loss: 404.4267 - val_mean_absolute_error: 13.1361
+ Time elapsed for epoch: 44.84s
+Epoch 012: - loss: 177.9238 - mean_absolute_error: 8.9272 - val_loss: 435.9065 - val_mean_absolute_error: 13.8696
+ Time elapsed for epoch: 44.37s
+Epoch 013: - loss: 173.3949 - mean_absolute_error: 8.8183 - val_loss: 419.3406 - val_mean_absolute_error: 13.4777
+ Time elapsed for epoch: 43.59s
+Epoch 014: - loss: 150.6759 - mean_absolute_error: 8.1959 - val_loss: 347.4114 - val_mean_absolute_error: 12.0850
+ Time elapsed for epoch: 43.56s
+Epoch 015: - loss: 143.6375 - mean_absolute_error: 7.9621 - val_loss: 379.9944 - val_mean_absolute_error: 12.1329
+ Time elapsed for epoch: 44.19s
+Epoch 016: - loss: 147.8327 - mean_absolute_error: 7.9544 - val_loss: 468.2782 - val_mean_absolute_error: 13.5836
+ Time elapsed for epoch: 43.31s
+Epoch 017: - loss: 133.7326 - mean_absolute_error: 7.6419 - val_loss: 422.1970 - val_mean_absolute_error: 13.8733
+ Time elapsed for epoch: 43.72s
+Epoch 018: - loss: 130.7841 - mean_absolute_error: 7.5623 - val_loss: 499.8054 - val_mean_absolute_error: 13.8503
+ Time elapsed for epoch: 43.88s
+Epoch 019: - loss: 119.1126 - mean_absolute_error: 7.1762 - val_loss: 537.5604 - val_mean_absolute_error: 14.8386
+ Time elapsed for epoch: 43.61s
+Epoch 020: - loss: 118.8986 - mean_absolute_error: 7.1798 - val_loss: 381.3113 - val_mean_absolute_error: 12.3626
+ Time elapsed for epoch: 44.23s
+Epoch 021: - loss: 102.0399 - mean_absolute_error: 6.6967 - val_loss: 320.4942 - val_mean_absolute_error: 11.4609
+ Time elapsed for epoch: 43.92s
+Epoch 022: - loss: 100.3350 - mean_absolute_error: 6.6277 - val_loss: 320.5600 - val_mean_absolute_error: 11.3725
+ Time elapsed for epoch: 44.79s
+Epoch 023: - loss: 90.6591 - mean_absolute_error: 6.2238 - val_loss: 472.8626 - val_mean_absolute_error: 13.7128
+ Time elapsed for epoch: 45.22s
+Epoch 024: - loss: 84.8658 - mean_absolute_error: 6.0847 - val_loss: 402.2122 - val_mean_absolute_error: 12.7702
+ Time elapsed for epoch: 44.70s
+Epoch 025: - loss: 83.6755 - mean_absolute_error: 6.0017 - val_loss: 857.4754 - val_mean_absolute_error: 19.3285
+ Time elapsed for epoch: 44.83s
+Epoch 026: - loss: 79.3705 - mean_absolute_error: 5.9219 - val_loss: 346.4466 - val_mean_absolute_error: 11.2887
+ Time elapsed for epoch: 46.11s
+Epoch 027: - loss: 83.6577 - mean_absolute_error: 5.9730 - val_loss: 367.2133 - val_mean_absolute_error: 11.7192
+ Time elapsed for epoch: 47.27s
+Epoch 028: - loss: 77.4539 - mean_absolute_error: 5.8228 - val_loss: 367.5883 - val_mean_absolute_error: 11.0788
+ Time elapsed for epoch: 46.47s
+Epoch 029: - loss: 75.2741 - mean_absolute_error: 5.6071 - val_loss: 407.7214 - val_mean_absolute_error: 12.9233
+ Time elapsed for epoch: 45.35s
+Epoch 030: - loss: 73.6033 - mean_absolute_error: 5.5462 - val_loss: 448.5389 - val_mean_absolute_error: 13.1858
+ Time elapsed for epoch: 45.30s
+Epoch 031: - loss: 75.4062 - mean_absolute_error: 5.5911 - val_loss: 368.2883 - val_mean_absolute_error: 11.8021
+ Time elapsed for epoch: 45.13s
+Training progress saved. Epoch 50/50.
