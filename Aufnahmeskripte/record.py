@@ -1,5 +1,5 @@
-#record.py edited 1208 @2:10PM by Sven
-#Dieses Programm nimmt den Bildschirm und die Controller-Inputs synchronisiert auf
+# record.py edited 1208 @4:40PM by Sven
+# Dieses Programm nimmt den Bildschirm und die Controller-Inputs synchronisiert auf
 
 import cv2
 import numpy as np
@@ -11,9 +11,10 @@ import os
 from datetime import datetime
 from pynput import mouse, keyboard
 from controller import XboxController  # Importiere die XboxController-Klasse
+import winsound
 
 # Configuration variables
-FPS = 20.0
+FPS = 50.0
 SCREEN_WIDTH, SCREEN_HEIGHT = pyautogui.size()
 
 # Ensure the records folder exists
@@ -43,19 +44,28 @@ def init_csv(record_dir):
 def record_screen():
     global recording, frame_count, current_record_dir, controller
     while recording:
-        img = pyautogui.screenshot()
-        frame = np.array(img)
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        frame_filename = os.path.join(current_record_dir, f"frame_{frame_count:05d}.png")
-        cv2.imwrite(frame_filename, frame)
+        try:
+            img = pyautogui.screenshot()
+            frame = np.array(img)
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            frame_filename = os.path.join(current_record_dir, f"frame_{frame_count:05d}.png")
+            cv2.imwrite(frame_filename, frame)
 
-        if controller:
-            controller_inputs = controller.get_controller_inputs()
-            timestamp = time.time() - start_time
-            csv_writer.writerow([frame_count, f"{timestamp:.3f}"] + controller_inputs)
+            if controller:
+                controller_inputs = controller.get_controller_inputs()
+                timestamp = time.time() - start_time
+                csv_writer.writerow([frame_count, f"{timestamp:.3f}"] + controller_inputs)
 
-        frame_count += 1
-        time.sleep(1 / FPS)
+            frame_count += 1
+            time.sleep(1 / FPS)
+        except Exception as e:
+            print(f"Error during recording: {e}")
+
+# Play a beep sound
+def play_beep():
+    frequency = 1000  # Set frequency to 1000 Hz
+    duration = 200  # Set duration to 200 ms
+    winsound.Beep(frequency, duration)
 
 # Toggle recording
 def toggle_recording():
@@ -71,6 +81,7 @@ def toggle_recording():
         init_csv(current_record_dir)
         record_thread = threading.Thread(target=record_screen, daemon=True)
         record_thread.start()
+        play_beep()  # Beep at start
         print("Recording started...")
     else:
         # Stop recording
@@ -79,6 +90,7 @@ def toggle_recording():
             record_thread.join()  # Warten Sie auf das Ende des Threads
         if csv_file:
             csv_file.close()
+        play_beep()  # Beep at stop
         print("Recording stopped...")
 
 # Define on_press and on_release accordingly
