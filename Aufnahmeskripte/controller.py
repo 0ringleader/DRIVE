@@ -1,7 +1,5 @@
 #controller.py edited 1208 @1:15AM
 
-#controller.py edited 0608 @10:30PM by Sven
-
 import pygame
 import time
 import csv
