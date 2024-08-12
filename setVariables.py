@@ -1,4 +1,4 @@
-#setVariables.py edited 1208 @11:15AM by Sven
+#setVariables.py edited 1208 @2:20PM by Sven
 
 import configparser
 
@@ -12,7 +12,7 @@ class SetVariables:
                            'noise_searchwindowsize', 'canny_threshold1', 'canny_threshold2', 'clahe_cliplimit',
                            'clahe_tilegridsize', 'analyzeimages', 'overrideimages', 'n_clusters'],
             'neuronalnet.py': ['learning_rate', 'epochs', 'batch_size', 'validation_split', 'l1_reg', 'l2_reg',
-                               'dropout_rate', 'data_dir', 'xSize', 'ySize', 'printConsole']
+                               'dropout_rate', 'data_dir', 'xSize', 'ySize', 'printConsole', 'considerRecentControls']
         }
 
     def get_variables(self, section):
