@@ -25,25 +25,28 @@ public class CustomCarController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+void Update()
+{
+    if (!isControlledByWebsite)
     {
-        if (!isControlledByWebsite)
-        {
-            // Aktualisieren Sie die Geschwindigkeitsvariable mit dem Mausrad
-            targetSpeed += Input.GetAxis("Mouse ScrollWheel");
+        // Update the speed variable with the mouse wheel
+        targetSpeed += Input.GetAxis("Mouse ScrollWheel");
 
+        // Update the steering variable with the arrow keys
+        targetSteering = Input.GetAxis("Horizontal") * 30;
+    }
 
+    if (Input.GetKeyDown(KeyCode.R))
+    {
+        ResetCar(); // Call the ResetCar method when 'R' is pressed
+    }
 
-            // Aktualisieren Sie die Lenkvariable mit den Pfeiltasten
-            targetSteering = Input.GetAxis("Horizontal")*30;
-        }
-        
-        UpdateSteering();
-        UpdateSpeed();
-        
-        // Fortbewegung des Autos
-        var movement = transform.forward * speed * Time.deltaTime;
-        transform.position += movement;
+    UpdateSteering();
+    UpdateSpeed();
+
+    // Car movement
+    var movement = transform.forward * speed * Time.deltaTime;
+    transform.position += movement;
 
         //Drehung der Vorderräder
         frontWheelLeft.localEulerAngles = new Vector3(0, 0, steering + 90);
@@ -69,6 +72,15 @@ public class CustomCarController : MonoBehaviour
 
 
     }
+
+    private void ResetCar()
+{
+    transform.position = Vector3.zero; // Reset position to (0,0,0)
+    speed = 0.0f; // Reset speed
+    steering = 0.0f; // Reset steering
+    targetSpeed = 0.0f; // Reset target speed
+    targetSteering = 0.0f; // Reset target steering
+}
     
     public void SetControlValues(float speed, float steering)
     {
