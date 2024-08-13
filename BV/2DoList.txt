@@ -1,0 +1,12 @@
+driveCNN
+-input (Imagestream + SteuerDaten vom Auto)
+- kleine Vorverabeitung
+- schnittstelle zum auto (controlcar.py) bzw Verbindung
+- ggf steuerdaten anpassen (wertebereich)
+- output (Geschwindigkeit und Richtung)
+
+CNN
+- verbessern (mehr schichten ggf)
+
+Simulation
+- Daten aufnehmen (mit controller!)
