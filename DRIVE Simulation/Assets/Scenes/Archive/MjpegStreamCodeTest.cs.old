@@ -1,0 +1,136 @@
+using System;
+using System.Collections;
+using System.Collections.Concurrent;
+using System.Net;
+using System.Threading.Tasks;
+using UnityEngine;
+
+public class MjpegStreamCodeTest : MonoBehaviour
+{
+    public int port = 8080;
+    public Camera cameraToCapture;
+    public int width = 640;
+    public int height = 480;
+
+    private HttpListener httpListener;
+    private bool isStreaming;
+    private RenderTexture renderTexture;
+    private Texture2D screenshot;
+
+    void Start()
+    {
+        renderTexture = new RenderTexture(width, height, 24);
+        screenshot = new Texture2D(width, height, TextureFormat.RGB24, false);
+
+        StartServer();
+    }
+
+    void Update()
+    {
+        MainThreadDispatcher.Update();
+    }
+
+    void StartServer()
+    {
+        Task.Run(() =>
+        {
+            try
+            {
+                Debug.Log("Starting server...");
+                httpListener = new HttpListener();
+                httpListener.Prefixes.Add($"http://*:{port}/stream/");
+                httpListener.Start();
+                isStreaming = true;
+                MainThreadDispatcher.ExecuteOnMainThread(() => StartCoroutine(StreamMJPEG()));
+                Debug.Log($"MJPEG stream available at http://localhost:{port}/stream/");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Failed to start server: {e.Message}");
+            }
+        });
+    }
+
+IEnumerator StreamMJPEG()
+{
+    while (isStreaming)
+    {
+        var getContextTask = httpListener.GetContextAsync();
+        yield return new WaitUntil(() => getContextTask.IsCompleted); // Wait for GetContextAsync to complete
+
+        if (getContextTask.Exception != null)
+        {
+            Debug.LogError(getContextTask.Exception.ToString());
+            yield break; // Exit the coroutine in case of an exception
+        }
+
+        HttpListenerContext context = getContextTask.Result;
+        HttpListenerResponse response = context.Response;
+        response.ContentType = "multipart/x-mixed-replace; boundary=--boundary";
+
+        while (isStreaming)
+        {
+            byte[] buffer = CaptureScreenshot();
+            string header = "\r\n--boundary\r\nContent-Type: image/jpeg\r\nContent-Length: " + buffer.Length + "\r\n\r\n";
+            byte[] headerBytes = System.Text.Encoding.ASCII.GetBytes(header);
+
+            var writeHeaderTask = response.OutputStream.WriteAsync(headerBytes, 0, headerBytes.Length);
+            yield return new WaitUntil(() => writeHeaderTask.IsCompleted); // Wait for WriteAsync to complete
+
+            var writeBufferTask = response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+            yield return new WaitUntil(() => writeBufferTask.IsCompleted); // Wait for WriteAsync to complete
+
+            yield return new WaitForSeconds(0.1f); // Adjust the frame rate as needed
+        }
+
+        response.OutputStream.Close();
+        Debug.Log("Client disconnected.");
+    }
+}
+
+    byte[] CaptureScreenshot()
+    {
+        cameraToCapture.targetTexture = renderTexture;
+        cameraToCapture.Render();
+
+        RenderTexture.active = renderTexture;
+        screenshot.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+        screenshot.Apply();
+
+        byte[] bytes = screenshot.EncodeToJPG();
+
+        cameraToCapture.targetTexture = null;
+        RenderTexture.active = null;
+
+        return bytes;
+    }
+
+    void OnApplicationQuit()
+    {
+        Debug.Log("Stopping server...");
+        isStreaming = false;
+        if (httpListener != null)
+        {
+            httpListener.Stop();
+            httpListener.Close();
+        }
+    }
+}
+
+public static class MainThreadDispatcher
+{
+    private static readonly ConcurrentQueue<Action> actions = new ConcurrentQueue<Action>();
+
+    public static void ExecuteOnMainThread(Action action)
+    {
+        actions.Enqueue(action);
+    }
+
+    public static void Update()
+    {
+        while (actions.TryDequeue(out var action))
+        {
+            action.Invoke();
+        }
+    }
+}

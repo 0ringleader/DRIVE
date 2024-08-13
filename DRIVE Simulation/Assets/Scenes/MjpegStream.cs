@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading;
 using System.Collections;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 public class MJPEGStream : MonoBehaviour
 {
@@ -13,19 +12,30 @@ public class MJPEGStream : MonoBehaviour
     public Camera cameraToCapture;
     public int width = 640;
     public int height = 480;
-    public float frameRate = 10.0f; // Public variable to configure the frame rate
+    public float frameRate = 10f; // Frame rate in frames per second
+    private float frameDuration; // Duration of one frame in milliseconds
+
     private HttpListener httpListener;
     private bool isStreaming;
     private RenderTexture renderTexture;
     private Texture2D screenshot;
+    private readonly object frameLock = new object();
+    private byte[] latestFrame = null;
 
     void Start()
     {
+        // Ensure Unity continues running even when the game window is not in focus
+        Application.runInBackground = true;
+
         // Initialize RenderTexture and Texture2D on the main thread
         renderTexture = new RenderTexture(width, height, 24);
         screenshot = new Texture2D(width, height, TextureFormat.RGB24, false);
 
+        // Compute the frame duration based on the desired frame rate
+        frameDuration = 1000f / frameRate;
+
         StartServer();
+        StartCoroutine(CaptureFrames());
     }
 
     void StartServer()
@@ -35,70 +45,108 @@ public class MJPEGStream : MonoBehaviour
         httpListener.Prefixes.Add($"http://*:{port}/stream/");
         httpListener.Start();
         isStreaming = true;
-        StartCoroutine(StreamMJPEG());
+
+        // Run the HttpListener in a separate thread
+        new Thread(() =>
+        {
+            while (isStreaming)
+            {
+                Debug.Log("Waiting for client connection...");
+                try
+                {
+                    var context = httpListener.GetContext();
+                    ThreadPool.QueueUserWorkItem(o => HandleClient(context));
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Error accepting clients: {e.Message}");
+                }
+            }
+        }).Start();
+
         Debug.Log($"MJPEG stream available at http://localhost:{port}/stream/");
     }
 
-    IEnumerator StreamMJPEG()
+    void HandleClient(HttpListenerContext context)
     {
-        while (isStreaming)
+        var response = context.Response;
+        response.ContentType = "multipart/x-mixed-replace; boundary=--boundary";
+        response.StatusCode = (int)HttpStatusCode.OK;
+
+        Debug.Log("Client connected.");
+
+        try
         {
-            Debug.Log("Waiting for client connection...");
-            var context = httpListener.GetContext();
-            var response = context.Response;
-            response.ContentType = "multipart/x-mixed-replace; boundary=--boundary";
-            response.StatusCode = (int)HttpStatusCode.OK;
-
-            Debug.Log("Client connected.");
-
             while (isStreaming)
             {
-                byte[] jpegData = CaptureScreenshot();
+                byte[] jpegData;
+                lock (frameLock)
+                {
+                    jpegData = latestFrame;
+                }
+
+                if (jpegData == null)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
 
                 string header = "\r\n--boundary\r\nContent-Type: image/jpeg\r\nContent-Length: " + jpegData.Length + "\r\n\r\n";
                 byte[] headerBytes = Encoding.ASCII.GetBytes(header);
 
-                try
-                {
-                    response.OutputStream.Write(headerBytes, 0, headerBytes.Length);
-                    response.OutputStream.Write(jpegData, 0, jpegData.Length);
-                    response.OutputStream.Flush();
-                }
-                catch (Exception ex)
-                {
-                    break;
-                }
+                response.OutputStream.Write(headerBytes, 0, headerBytes.Length);
+                response.OutputStream.Write(jpegData, 0, jpegData.Length);
+                response.OutputStream.Flush();
+                Debug.Log("Frame sent.");
 
-                yield return new WaitForSeconds(1.0f / frameRate); // Use the frameRate variable to control the wait time
+                // Sleep for the frame duration to control the frame rate
+                Thread.Sleep((int)frameDuration);
             }
-
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error sending frame: {ex.Message}");
+        }
+        finally
+        {
             response.OutputStream.Close();
             Debug.Log("Client disconnected.");
         }
     }
 
-    byte[] CaptureScreenshot()
+    IEnumerator CaptureFrames()
     {
-        cameraToCapture.targetTexture = renderTexture;
-        cameraToCapture.Render();
+        while (isStreaming)
+        {
+            yield return new WaitForEndOfFrame();
 
-        RenderTexture.active = renderTexture;
-        screenshot.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-        screenshot.Apply();
+            cameraToCapture.targetTexture = renderTexture;
+            cameraToCapture.Render();
 
-        byte[] bytes = screenshot.EncodeToJPG();
+            RenderTexture.active = renderTexture;
+            screenshot.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            screenshot.Apply();
 
-        cameraToCapture.targetTexture = null;
-        RenderTexture.active = null;
+            byte[] bytes = screenshot.EncodeToJPG();
 
-        return bytes;
+            cameraToCapture.targetTexture = null;
+            RenderTexture.active = null;
+
+            lock (frameLock)
+            {
+                latestFrame = bytes;
+            }
+        }
     }
 
     void OnApplicationQuit()
     {
         Debug.Log("Stopping server...");
         isStreaming = false;
-        httpListener.Stop();
-        httpListener.Close();
+        if (httpListener != null && httpListener.IsListening)
+        {
+            httpListener.Stop();
+            httpListener.Close();
+        }
     }
 }

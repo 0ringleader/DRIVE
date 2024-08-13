@@ -11,8 +11,8 @@ public class MJPEGStreamCodeTest : MonoBehaviour
 {
     public int port = 8000;
     public Camera cameraToCapture;
-    public int width = 1920;
-    public int height = 1080;
+    public int width = 640;
+    public int height = 480;
     private HttpListener httpListener;
     private bool isStreaming;
     private RenderTexture renderTexture;
