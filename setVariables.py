@@ -1,4 +1,4 @@
-#setVariables.py edited 1208 @2:20PM by Sven
+#setVariables.py edited 1408 @9:25AM by Sven
 
 import configparser
 
@@ -8,11 +8,11 @@ class SetVariables:
         self.config = configparser.ConfigParser()
         self.config.read(config_file)
         self.expected_variables = {
-            'precalc.py': ['xsize', 'ysize', 'edge_strength', 'noise_h', 'noise_hcolor', 'noise_templatewindowsize',
-                           'noise_searchwindowsize', 'canny_threshold1', 'canny_threshold2', 'clahe_cliplimit',
-                           'clahe_tilegridsize', 'analyzeimages', 'overrideimages', 'n_clusters'],
+            'precalc.py': ['xsize', 'ysize', 'clahe_cliplimit', 'clahe_tilegridsize', 'gaussian_blur_ksize',
+                           'denoising_h', 'denoising_template_window_size', 'denoising_search_window_size',
+                           'adaptive_thresh_block_size', 'adaptive_thresh_C', 'rotate'],
             'neuronalnet.py': ['learning_rate', 'epochs', 'batch_size', 'validation_split', 'l1_reg', 'l2_reg',
-                               'dropout_rate', 'data_dir', 'xSize', 'ySize', 'printConsole', 'considerRecentControls']
+                               'dropout_rate', 'data_dir', 'xSize', 'ySize', 'printConsole']
         }
 
     def get_variables(self, section):
@@ -57,3 +57,4 @@ def replySetVariables(section):
         print(str(e))
     except Exception as e:
         print(f"An error occurred: {str(e)}")
+
