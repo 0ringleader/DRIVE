@@ -1,150 +1,111 @@
-#precalc.py edited 1108 @11:50PM by Sven
+#precalc.py edited 1408 @9:25AM by Sven
 
 import cv2
 import numpy as np
 import os
-import csv
 import shutil
-from setVariables import SetVariables, replySetVariables
+from configparser import ConfigParser
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Load configuration variables
-config = SetVariables('config.ini')
-variables = config.get_variables('precalc.py')
+config = ConfigParser()
+config.read('config.ini')
 
 
 # Helper functions for conversion and type checking
-def get_float(var_name, default=None):
+def get_bool(section, var_name, default=None):
     try:
-        return float(variables.get(var_name, default))
+        return config.getboolean(section, var_name, fallback=default)
     except ValueError:
-        print(f"Warning: The value for {var_name} cannot be converted to float. Using default value {default}.")
+        print(
+            f"Warning: The value for {var_name} in {section} cannot be converted to boolean. Using default value {default}.")
         return default
 
 
-def get_int(var_name, default=None):
+def get_float(section, var_name, default=None):
     try:
-        return int(variables.get(var_name, default))
+        return config.getfloat(section, var_name, fallback=default)
     except ValueError:
-        print(f"Warning: The value for {var_name} cannot be converted to int. Using default value {default}.")
+        print(
+            f"Warning: The value for {var_name} in {section} cannot be converted to float. Using default value {default}.")
         return default
 
 
-def get_tuple(var_name, default=None):
-    value = variables.get(var_name, default)
+def get_int(section, var_name, default=None):
+    try:
+        return config.getint(section, var_name, fallback=default)
+    except ValueError:
+        print(
+            f"Warning: The value for {var_name} in {section} cannot be converted to int. Using default value {default}.")
+        return default
+
+
+def get_tuple(section, var_name, default=None):
+    value = config.get(section, var_name, fallback=default)
     if isinstance(value, tuple):
         return value
     try:
         return tuple(map(int, value.strip('()').split(',')))
     except ValueError:
-        print(f"Warning: The value for {var_name} cannot be converted to tuple of int. Using default value {default}.")
+        print(
+            f"Warning: The value for {var_name} in {section} cannot be converted to tuple of int. Using default value {default}.")
         return default
 
 
 # Get variables from the configuration file and convert
-xSize = get_int('xSize', 256)
-ySize = get_int('ySize', 192)
-edge_strength = get_float('edge_strength', 1.0)
-noise_h = get_float('noise_h', 10)
-noise_hColor = get_float('noise_hColor', 10)
-noise_templateWindowSize = get_int('noise_templateWindowSize', 7)
-noise_searchWindowSize = get_int('noise_searchWindowSize', 21)
-canny_threshold1 = get_float('canny_threshold1', 50)
-canny_threshold2 = get_float('canny_threshold2', 150)
-clahe_clipLimit = get_float('clahe_clipLimit', 3.0)
-clahe_tileGridSize = get_tuple('clahe_tileGridSize', (8, 8))
+xSize = get_int('precalc', 'xsize', 256)
+ySize = get_int('precalc', 'ysize', 192)
+clahe_clipLimit = get_float('precalc', 'clahe_cliplimit', 3.0)
+clahe_tileGridSize = get_tuple('precalc', 'clahe_tilegridsize', (8, 8))
+gaussian_blur_ksize = get_int('precalc', 'gaussian_blur_ksize', 5)
+denoising_h = get_float('precalc', 'denoising_h', 30)
+denoising_template_window_size = get_int('precalc', 'denoising_template_window_size', 7)
+denoising_search_window_size = get_int('precalc', 'denoising_search_window_size', 21)
+adaptive_thresh_block_size = get_int('precalc', 'adaptive_thresh_block_size', 11)
+adaptive_thresh_C = get_float('precalc', 'adaptive_thresh_C', 2)
+
+# New variables for rotation and filtering
+rotate = get_bool('precalc', 'rotate', True)
+apply_filter = get_bool('precalc', 'apply_filter', False)
 
 # Input and output directories
 input_dir = "PreCalcIn"
 output_dir = "PreCalcOut"
 os.makedirs(output_dir, exist_ok=True)
 
-# Output response to set variables
-replySetVariables('precalc.py')
 
-
-# Image processing functions
-def reduce_artifacts(edges):
-    kernel = np.ones((3, 3), np.uint8)
-    edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=2)
-    edges = cv2.morphologyEx(edges, cv2.MORPH_OPEN, kernel, iterations=1)
-    return edges
-
-
-def reduce_noise(image):
-    return cv2.fastNlMeansDenoisingColored(image, None, noise_h, noise_hColor, noise_templateWindowSize,
-                                           noise_searchWindowSize)
-
-
-def enhance_contrast(image):
-    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
+# Function to apply CLAHE
+def apply_clahe(image_gray):
     clahe = cv2.createCLAHE(clipLimit=clahe_clipLimit, tileGridSize=clahe_tileGridSize)
-    cl = clahe.apply(l)
-    limg = cv2.merge((cl, a, b))
-    return cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+    return clahe.apply(image_gray)
 
 
-def extract_and_enhance_edges(image):
-    image = reduce_noise(image)
-    image = enhance_contrast(image)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(blurred, threshold1=canny_threshold1, threshold2=canny_threshold2)
-    edges = reduce_artifacts(edges)
-    return edges
+# Function to reduce noise
+def reduce_noise(image_gray):
+    # Apply Gaussian Blur
+    ksize = (gaussian_blur_ksize, gaussian_blur_ksize)
+    blurred = cv2.GaussianBlur(image_gray, ksize, 0)
+
+    # Apply Denoising
+    denoised = cv2.fastNlMeansDenoising(blurred, None, denoising_h, denoising_template_window_size,
+                                        denoising_search_window_size)
+
+    return denoised
 
 
-def apply_edge_overlay(image, edges):
-    edge_color = (0, 255, 0)  # Green color for edges
-    color_edges = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
-    color_edges[np.where((color_edges == [255, 255, 255]).all(axis=2))] = edge_color
-    return cv2.addWeighted(image, 1, color_edges, edge_strength, 0)
+# Function to binarize the image
+def binarize_image(image_gray):
+    # Apply global thresholding
+    _, binary_global = cv2.threshold(image_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
+    # Apply adaptive thresholding
+    binary_adaptive = cv2.adaptiveThreshold(image_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                            cv2.THRESH_BINARY, adaptive_thresh_block_size, adaptive_thresh_C)
 
-def rotate_image(image):
-    return cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+    # Combine the two results by taking the logical AND
+    binary_combined = cv2.bitwise_and(binary_global, binary_adaptive)
 
-
-# New function for data augmentation
-def augment_image(image):
-    augmented_images = []
-
-    # Original image
-    augmented_images.append(image)
-
-    # Vary brightness
-    brightness = np.random.uniform(0.8, 1.2)
-    augmented_images.append(cv2.convertScaleAbs(image, alpha=brightness, beta=0))
-
-    # Vary contrast
-    contrast = np.random.uniform(0.8, 1.2)
-    augmented_images.append(cv2.convertScaleAbs(image, alpha=contrast, beta=0))
-
-    # Random rotation (small angles)
-    angle = np.random.uniform(-10, 10)
-    rows, cols = image.shape[:2]
-    M = cv2.getRotationMatrix2D((cols / 2, rows / 2), angle, 1)
-    augmented_images.append(cv2.warpAffine(image, M, (cols, rows)))
-
-    # Horizontal flip
-    augmented_images.append(cv2.flip(image, 1))
-
-    return augmented_images
-
-
-# New function for adaptive parameter adjustment
-def adaptive_parameters(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    mean_brightness = np.mean(gray)
-    std_brightness = np.std(gray)
-
-    # Adjust parameters based on image properties
-    adjusted_canny_threshold1 = max(10, min(100, canny_threshold1 * (mean_brightness / 128)))
-    adjusted_canny_threshold2 = max(50, min(200, canny_threshold2 * (mean_brightness / 128)))
-    adjusted_clahe_clipLimit = max(1.0, min(5.0, clahe_clipLimit * (std_brightness / 64)))
-
-    return adjusted_canny_threshold1, adjusted_canny_threshold2, adjusted_clahe_clipLimit
+    return binary_combined
 
 
 # Updated function to process a single image
@@ -155,34 +116,29 @@ def process_single_image(input_path, output_path_dir, filename):
         print(f"Warning: Image {input_path} could not be loaded and will be skipped.")
         return
 
-    # Adaptive parameter adjustment
-    adj_canny_threshold1, adj_canny_threshold2, adj_clahe_clipLimit = adaptive_parameters(img)
+    # Resize image
+    img_resized = cv2.resize(img, (xSize, ySize))
 
-    augmented_images = augment_image(img)
+    # Rotate image if the rotate parameter is True
+    if rotate:
+        img_resized = cv2.rotate(img_resized, cv2.ROTATE_90_CLOCKWISE)
 
-    for i, aug_img in enumerate(augmented_images):
-        # Rotate image 90 degrees clockwise
-        aug_img_rotated = rotate_image(aug_img)
+    # Convert to grayscale
+    img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
 
-        # Resize rotated image
-        aug_img_resized = cv2.resize(aug_img_rotated, (xSize, ySize))
+    # Apply CLAHE
+    img_clahe = apply_clahe(img_gray)
 
-        # Apply adaptive parameters
-        clahe = cv2.createCLAHE(clipLimit=adj_clahe_clipLimit, tileGridSize=clahe_tileGridSize)
-        l, a, b = cv2.split(cv2.cvtColor(aug_img_resized, cv2.COLOR_BGR2LAB))
-        cl = clahe.apply(l)
-        enhanced_img = cv2.cvtColor(cv2.merge((cl, a, b)), cv2.COLOR_LAB2BGR)
+    # Reduce noise if apply_filter is True
+    if apply_filter:
+        img_clahe = reduce_noise(img_clahe)
 
-        edges = cv2.Canny(cv2.cvtColor(enhanced_img, cv2.COLOR_BGR2GRAY),
-                          threshold1=adj_canny_threshold1,
-                          threshold2=adj_canny_threshold2)
-        edges = reduce_artifacts(edges)
+    # Binarize image
+    img_binary = binarize_image(img_clahe)
 
-        final_img = apply_edge_overlay(enhanced_img, edges)
-
-        output_filename = f"{os.path.splitext(filename)[0]}_aug{i}{os.path.splitext(filename)[1]}"
-        output_path = os.path.join(output_path_dir, output_filename)
-        cv2.imwrite(output_path, final_img)
+    # Save the final image
+    output_path = os.path.join(output_path_dir, filename)
+    cv2.imwrite(output_path, img_binary)
 
 
 def process_images_and_csv(input_dir, output_dir):
@@ -225,7 +181,8 @@ def process_images_and_csv(input_dir, output_dir):
 
 # Main execution
 if __name__ == "__main__":
-    print("Starting enhanced image preprocessing for CNN with 90-degree rotation...")
+    print(
+        "Starting enhanced image preprocessing for CNN with grayscale conversion, optional noise reduction, and binarization...")
     print(f"Input directory: {input_dir}")
     print(f"Output directory: {output_dir}")
 
