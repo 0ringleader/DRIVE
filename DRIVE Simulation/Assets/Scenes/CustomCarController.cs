@@ -80,6 +80,7 @@ void Update()
     steering = 0.0f; // Reset steering
     targetSpeed = 0.0f; // Reset target speed
     targetSteering = 0.0f; // Reset target steering
+    transform.rotation = Quaternion.identity; // Reset rotation  
 }
     
     public void SetControlValues(float speed, float steering)
