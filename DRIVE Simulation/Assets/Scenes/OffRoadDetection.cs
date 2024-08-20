@@ -8,6 +8,7 @@ public class OffRoadDetection : MonoBehaviour
     public string roadTag = "RoadMesh"; 
     private Dictionary<string, bool> wheelStatus; 
     public Text statusText; 
+    public CustomCarController carController; // Reference to CustomCarController
 
     void Start()
     {
@@ -87,22 +88,28 @@ public class OffRoadDetection : MonoBehaviour
         {
             if (wheelTag == null)
             {
-                statusText.text = "Das Auto ist nicht auf der Straﬂe.";
+                statusText.text = "Das Auto ist nicht auf der Stra√üe.";
                 statusText.color = Color.red;
-                Debug.Log("Das Auto ist nicht auf der Straﬂe.");
+                Debug.Log("Das Auto ist nicht auf der Stra√üe.");
             }
             else
             {
-                statusText.text = $"Das Rad {wheelTag} hat die Straﬂe verlassen!";
+                statusText.text = $"Das Rad {wheelTag} hat die Stra√üe verlassen!";
                 statusText.color = Color.red;
-                Debug.Log($"Das Rad {wheelTag} hat die Straﬂe verlassen!");
+                Debug.Log($"Das Rad {wheelTag} hat die Stra√üe verlassen!");
+            }
+
+            // Reset the car if resetOnOffRoad is true
+            if (carController != null && carController.resetOnOffRoad)
+            {
+                carController.ResetCar();
             }
         }
         else
         {
-            statusText.text = "Das Auto ist auf der Straﬂe.";
+            statusText.text = "Das Auto ist auf der Stra√üe.";
             statusText.color = new Color(0.0f, 0.5f, 0.0f);
-            Debug.Log("Das Auto ist auf der Straﬂe.");
+            Debug.Log("Das Auto ist auf der Stra√üe.");
         }
     }
 }

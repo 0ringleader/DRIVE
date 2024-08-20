@@ -67,7 +67,7 @@ def process_image_and_control(frame):
 
 #car_control = CarControl('192.168.1.162', 8000, 'http://192.168.1.162:8000/stream')
 #car_control = CarControl('10.42.0.1', 8000, 'http://10.42.0.1:8000/stream')
-car_control = CarControl('localhost', 8000, 'http://localhost:8000/stream')
+car_control = CarControl('10.42.0.186', 8000, 'http://10.42.0.186:8000/stream')
 pygame.joystick.init()
 joystick = pygame.joystick.Joystick(0)
 joystick.init()
