@@ -127,6 +127,9 @@ public class MJPEGStream : MonoBehaviour
             screenshot.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             screenshot.Apply();
 
+            // Drehen der Texture2D um 180 Grad
+            RotateTexture(screenshot);
+
             byte[] bytes = screenshot.EncodeToJPG();
 
             cameraToCapture.targetTexture = null;
@@ -138,6 +141,24 @@ public class MJPEGStream : MonoBehaviour
             }
         }
     }
+
+    void RotateTexture(Texture2D texture)
+    {
+        Color[] pixels = texture.GetPixels();
+        Color[] rotatedPixels = new Color[pixels.Length];
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                rotatedPixels[(height - 1 - y) * width + (width - 1 - x)] = pixels[y * width + x];
+            }
+        }
+
+        texture.SetPixels(rotatedPixels);
+        texture.Apply();
+    }
+
 
     void OnApplicationQuit()
     {
