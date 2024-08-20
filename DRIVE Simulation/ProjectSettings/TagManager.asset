@@ -3,7 +3,13 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - RoadMesh
+  - WheelHL
+  - WheelHR
+  - WheelVL
+  - WheelVR
+  - Wheels
   layers:
   - Default
   - TransparentFX

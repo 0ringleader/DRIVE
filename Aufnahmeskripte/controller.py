@@ -1,4 +1,4 @@
-#controller.py edited 1208 @1:15AM
+#controller.py edited 2008 @2:25PM by Sven
 
 import pygame
 import time
@@ -8,12 +8,12 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import Button
 import threading
 import numpy as np
-from setVariables import SetVariables  # Import der SetVariables-Klasse für das Setzen der Variablen
+import setVariables  # Import das setVariables Modul
 
 class XboxController:
     def __init__(self, config_section='controller.py', plot_controller_inputs=True):
         # Lade Konfiguration
-        config_loader = SetVariables()  # Verwenden Sie den korrekten Klassennamen
+        config_loader = setVariables.SetVariables()  # Instanziiere die SetVariables-Klasse
         config = config_loader.get_variables(config_section)
 
         # Konfigurationsvariablen aus der Datei laden oder Standardwerte setzen
@@ -21,8 +21,10 @@ class XboxController:
         self.plot_controller_inputs = config.get('plot_controller_inputs', plot_controller_inputs)
         self.csv_filename = config.get('csv_filename', "xbox_controller_data.csv")
         self.time_window = config.get('time_window', 10)  # Sekunden für das Zeitfenster des Plots
-        self.update_interval = config.get('update_interval', 0.1)  # Reduzierte Update-Rate
+        self.update_interval = config.get('update_interval', 0.05)  # Intervall für das Plot-Update in Sekunden
         self.sleep_interval = config.get('sleep_interval', 0.01)  # Wartezeit zwischen den Datenupdates in Sekunden
+
+        self.start_time = None  # Initialisiere start_time
 
         # Initialisiere Pygame und Controller
         pygame.init()
@@ -50,15 +52,18 @@ class XboxController:
             ["Timestamp", "Left_Stick_X", "Left_Stick_Y", "Right_Stick_X", "Right_Stick_Y", "LT", "RT", "DPad_Up",
              "DPad_Right", "DPad_Down", "DPad_Left"])
 
-        self.start_time = time.time()  # Initialisiere start_time vor initialize_plot aufzurufen
-
         self.initialize_plot()
+
+        if not self.plot_controller_inputs:
+            self.start_time = time.time()  # Setze die Startzeit nur, wenn keine Plots verwendet werden, um Fehler zu vermeiden.
 
         self.data_thread = threading.Thread(target=self.update_data, daemon=True)
         self.data_thread.start()
 
     def initialize_plot(self):
         if self.plot_controller_inputs:
+            self.start_time = time.time()  # Setze die Startzeit hier, wenn Plots verwendet werden
+
             self.data_points = int(self.time_window / self.update_interval)
 
             self.timestamps = np.linspace(0, self.time_window, self.data_points)
@@ -74,12 +79,11 @@ class XboxController:
             )
 
             self.left_lines = [self.ax1.plot([], [], label=f'Left Stick {"X" if i == 0 else "Y"}')[0] for i in range(2)]
-            self.right_lines = [self.ax2.plot([], [], label=f'Right Stick {"X" if i == 0 else "Y"}')[0] for i in
-                                range(2)]
+            self.right_lines = [self.ax2.plot([], [], label=f'Right Stick {"X" if i == 0 else "Y"}')[0] for i in range(2)]
             self.shoulder_lines = [self.ax3.plot([], [], label=f'{"LT" if i == 0 else "RT"}')[0] for i in range(2)]
             self.dpad_lines = [self.ax4.plot([], [],
-                                             label=f'DPad_{"Up" if i == 0 else "Right" if i == 1 else "Down" if i == 2 else "Left"}')[
-                                   0] for i in range(4)]
+                                  label=f'DPad_{"Up" if i == 0 else "Right" if i == 1 else "Down" if i == 2 else "Left"}')[
+                                  0] for i in range(4)]
 
             for ax in (self.ax1, self.ax2, self.ax3):
                 ax.set_xlim(0, self.time_window)
@@ -101,8 +105,8 @@ class XboxController:
             button = Button(ax_button, 'Stop')
             button.on_clicked(self.stop_program)
 
-            self.ani = FuncAnimation(self.fig, self.update_plot, frames=None, interval=self.update_interval * 1000,
-                                     blit=True, cache_frame_data=False)  # Wieder Blit aktivieren
+            self.ani = FuncAnimation(self.fig, self.update_plot, frames=None, interval=self.update_interval * 1000, blit=True,
+                                     cache_frame_data=False)
 
     def stop_program(self, _event=None):
         print("Stopping...")
@@ -168,9 +172,8 @@ class XboxController:
     def get_controller_inputs(self):
         with self.lock:
             axes = [self.joystick.get_axis(i) for i in range(self.num_axes)]
-            dpad = list(self.joystick.get_hat(0)) if self.detect_d_pad_inputs else [0, 0]
+            dpad = list(self.joystick.get_hat(0)) if self.detect_d_pad_inputs else [0, 0, 0, 0]
         return axes[:4] + axes[4:6] + dpad
-
 
 if __name__ == "__main__":
     controller = XboxController(plot_controller_inputs=True)
@@ -180,4 +183,3 @@ if __name__ == "__main__":
         pass
     finally:
         controller.cleanup()
-

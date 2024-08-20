@@ -1,4 +1,4 @@
-# record.py edited 1208 @4:40PM by Sven
+# record.py edited 2008 @2:25PM by Sven
 # Dieses Programm nimmt den Bildschirm und die Controller-Inputs synchronisiert auf
 
 import cv2
