@@ -7,7 +7,8 @@ public class OffRoadDetection : MonoBehaviour
 {
     public string roadTag = "RoadMesh"; 
     private Dictionary<string, bool> wheelStatus; 
-    public Text statusText; 
+    public Text statusText;
+    private RoadStatusSender roadStatusSender;
 
     void Start()
     {
@@ -19,7 +20,8 @@ public class OffRoadDetection : MonoBehaviour
             { "WheelVR", true }
         };
         statusText.gameObject.SetActive(false); 
-        UpdateOffRoadStatus(); 
+        UpdateOffRoadStatus();
+        roadStatusSender = FindObjectOfType<RoadStatusSender>();
     }
 
     void OnCollisionEnter(Collision collision)
@@ -104,5 +106,6 @@ public class OffRoadDetection : MonoBehaviour
             statusText.color = new Color(0.0f, 0.5f, 0.0f);
             Debug.Log("Das Auto ist auf der Straﬂe.");
         }
+        roadStatusSender.SendStatusToServer(offRoad);
     }
 }
