@@ -10,8 +10,8 @@ public class MJPEGStream : MonoBehaviour
 {
     public int port = 8000;
     public Camera cameraToCapture;
-    public int width = 640;
-    public int height = 480;
+    public int width = 300;
+    public int height = 225;
     public float frameRate = 10f; // Frame rate in frames per second
     private float frameDuration; // Duration of one frame in milliseconds
 
