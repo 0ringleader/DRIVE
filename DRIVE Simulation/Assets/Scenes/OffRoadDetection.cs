@@ -112,6 +112,6 @@ public class OffRoadDetection : MonoBehaviour
             statusText.color = new Color(0.0f, 0.5f, 0.0f);
             Debug.Log("Das Auto ist auf der Straße.");
         }
-        roadStatusSender.SendStatusToServer(offRoad);
+//        roadStatusSender.SendStatusToServer(offRoad);
     }
 }
