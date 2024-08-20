@@ -1,4 +1,4 @@
-#setVariables.py edited 1408 @9:25AM by Sven
+#setVariables.py edited 2008 @2:25PM by Sven
 
 import configparser
 
@@ -57,4 +57,3 @@ def replySetVariables(section):
         print(str(e))
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-
