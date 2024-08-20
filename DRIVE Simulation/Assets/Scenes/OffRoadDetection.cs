@@ -9,7 +9,7 @@ public class OffRoadDetection : MonoBehaviour
     private Dictionary<string, bool> wheelStatus; 
     public Text statusText; 
     public CustomCarController carController; // Reference to CustomCarController
-    private RoadStatusSender roadStatusSender;
+    public RoadStatusSender roadStatusSender;
 
     void Start()
     {
@@ -22,7 +22,6 @@ public class OffRoadDetection : MonoBehaviour
         };
         statusText.gameObject.SetActive(false); 
         UpdateOffRoadStatus();
-        roadStatusSender = FindObjectOfType<RoadStatusSender>();
     }
 
     void OnCollisionEnter(Collision collision)

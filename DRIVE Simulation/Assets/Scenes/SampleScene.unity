@@ -924,8 +924,8 @@ GameObject:
   - component: {fileID: 795969101}
   - component: {fileID: 795969104}
   - component: {fileID: 795969105}
-  - component: {fileID: 795969106}
   - component: {fileID: 795969107}
+  - component: {fileID: 795969106}
   m_Layer: 0
   m_Name: Spline
   m_TagString: RoadMesh
@@ -1216,6 +1216,7 @@ MonoBehaviour:
   roadTag: RoadMesh
   statusText: {fileID: 500225285}
   carController: {fileID: 1125947878}
+  roadStatusSender: {fileID: 795969107}
 --- !u!54 &795969106
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1243,6 +1244,19 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &795969107
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 795969098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb88f064842f8434589d3c6b344967e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  port: 8000
 --- !u!1 &827963291
 GameObject:
   m_ObjectHideFlags: 0
@@ -1450,13 +1464,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 961135043}
   m_CullTransparentMesh: 1
-  m_GameObject: {fileID: 795969098}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bb88f064842f8434589d3c6b344967e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  port: 8000
 --- !u!1 &1047334506
 GameObject:
   m_ObjectHideFlags: 0

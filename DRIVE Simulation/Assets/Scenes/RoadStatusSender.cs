@@ -19,7 +19,7 @@ public class RoadStatusSender : MonoBehaviour
     void Start()
     {
         listener = new HttpListener();
-        listener.Prefixes.Add($"http://*:{port}/RoadStatusDetection");
+        listener.Prefixes.Add($"http://*:{port}/RoadStatusDetection/");
         listener.Start();
 
         listenerThread = new Thread(StartListener);
