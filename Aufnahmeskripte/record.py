@@ -1,122 +1,185 @@
-# record.py edited 1208 @4:40PM by Sven
-# Dieses Programm nimmt den Bildschirm und die Controller-Inputs synchronisiert auf
+#controller.py edited 2008 @2:25PM by Sven
 
-import cv2
-import numpy as np
-import pyautogui
+import pygame
 import time
 import csv
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.widgets import Button
 import threading
-import os
-from datetime import datetime
-from pynput import mouse, keyboard
-from controller import XboxController  # Importiere die XboxController-Klasse
-import winsound
+import numpy as np
+import setVariables  # Import das setVariables Modul
 
-# Configuration variables
-FPS = 50.0
-SCREEN_WIDTH, SCREEN_HEIGHT = pyautogui.size()
+class XboxController:
+    def __init__(self, config_section='controller.py', plot_controller_inputs=True):
+        # Lade Konfiguration
+        config_loader = setVariables.SetVariables()  # Instanziiere die SetVariables-Klasse
+        config = config_loader.get_variables(config_section)
 
-# Ensure the records folder exists
-script_dir = os.path.dirname(os.path.abspath(__file__))
-records_dir = os.path.join(script_dir, "records")
-os.makedirs(records_dir, exist_ok=True)
+        # Konfigurationsvariablen aus der Datei laden oder Standardwerte setzen
+        self.detect_d_pad_inputs = config.get('detect_d_pad_inputs', True)
+        self.plot_controller_inputs = config.get('plot_controller_inputs', plot_controller_inputs)
+        self.csv_filename = config.get('csv_filename', "xbox_controller_data.csv")
+        self.time_window = config.get('time_window', 10)  # Sekunden für das Zeitfenster des Plots
+        self.update_interval = config.get('update_interval', 0.05)  # Intervall für das Plot-Update in Sekunden
+        self.sleep_interval = config.get('sleep_interval', 0.01)  # Wartezeit zwischen den Datenupdates in Sekunden
 
-# Global variables
-recording = False
-frame_count = 0
-start_time = 0
-csv_file = None
-csv_writer = None
-controller = None  # Diese Variable wird den Controller speichern
-record_thread = None  # Der Thread für die Aufnahme
-current_record_dir = None  # Das aktuelle Verzeichnis für die Aufnahme
+        self.start_time = None  # Initialisiere start_time
 
-# Initialize CSV file
-def init_csv(record_dir):
-    global csv_file, csv_writer
-    csv_path = os.path.join(record_dir, "input_data.csv")
-    csv_file = open(csv_path, 'w', newline='')
-    csv_writer = csv.writer(csv_file)
-    csv_writer.writerow(["frame_count", "timestamp", "left_stick_x", "left_stick_y", "right_stick_x", "right_stick_y", "LT", "RT", "Dpad_Up", "Dpad_Right", "Dpad_Down", "Dpad_Left"])
+        # Initialisiere Pygame und Controller
+        pygame.init()
+        pygame.joystick.init()
 
-# Screen recording function
-def record_screen():
-    global recording, frame_count, current_record_dir, controller
-    while recording:
-        try:
-            img = pyautogui.screenshot()
-            frame = np.array(img)
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            frame_filename = os.path.join(current_record_dir, f"frame_{frame_count:05d}.png")
-            cv2.imwrite(frame_filename, frame)
+        self.stop_event = threading.Event()
+        self.lock = threading.Lock()
 
-            if controller:
-                controller_inputs = controller.get_controller_inputs()
-                timestamp = time.time() - start_time
-                csv_writer.writerow([frame_count, f"{timestamp:.3f}"] + controller_inputs)
+        if pygame.joystick.get_count() == 0:
+            raise RuntimeError("No joystick detected. Please connect an Xbox controller and try again.")
 
-            frame_count += 1
-            time.sleep(1 / FPS)
-        except Exception as e:
-            print(f"Error during recording: {e}")
+        self.joystick = pygame.joystick.Joystick(0)
+        self.joystick.init()
 
-# Play a beep sound
-def play_beep():
-    frequency = 1000  # Set frequency to 1000 Hz
-    duration = 200  # Set duration to 200 ms
-    winsound.Beep(frequency, duration)
+        print("Controller initialized: ", self.joystick.get_name())
 
-# Toggle recording
-def toggle_recording():
-    global recording, start_time, frame_count, record_thread, current_record_dir
-    if not recording:
-        # Start recording
-        recording = True
-        start_time = time.time()
-        frame_count = 0
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        current_record_dir = os.path.join(records_dir, f'record_{timestamp}')
-        os.makedirs(current_record_dir, exist_ok=True)
-        init_csv(current_record_dir)
-        record_thread = threading.Thread(target=record_screen, daemon=True)
-        record_thread.start()
-        play_beep()  # Beep at start
-        print("Recording started...")
-    else:
-        # Stop recording
-        recording = False
-        if record_thread:
-            record_thread.join()  # Warten Sie auf das Ende des Threads
-        if csv_file:
-            csv_file.close()
-        play_beep()  # Beep at stop
-        print("Recording stopped...")
+        self.num_axes = self.joystick.get_numaxes()
+        self.num_buttons = self.joystick.get_numbuttons()
 
-# Define on_press and on_release accordingly
-def on_press(key):
-    if key == keyboard.Key.esc:
-        toggle_recording()
+        # Initialisiere CSV-Datei
+        self.file = open(self.csv_filename, "w", newline='')
+        self.csv_writer = csv.writer(self.file)
 
-def on_release(key):
-    pass
+        self.csv_writer.writerow(
+            ["Timestamp", "Left_Stick_X", "Left_Stick_Y", "Right_Stick_X", "Right_Stick_Y", "LT", "RT", "DPad_Up",
+             "DPad_Right", "DPad_Down", "DPad_Left"])
 
-# Main execution
+        self.initialize_plot()
+
+        if not self.plot_controller_inputs:
+            self.start_time = time.time()  # Setze die Startzeit nur, wenn keine Plots verwendet werden, um Fehler zu vermeiden.
+
+        self.data_thread = threading.Thread(target=self.update_data, daemon=True)
+        self.data_thread.start()
+
+    def initialize_plot(self):
+        if self.plot_controller_inputs:
+            self.start_time = time.time()  # Setze die Startzeit hier, wenn Plots verwendet werden
+
+            self.data_points = int(self.time_window / self.update_interval)
+
+            self.timestamps = np.linspace(0, self.time_window, self.data_points)
+            self.left_stick = [np.zeros(self.data_points), np.zeros(self.data_points)]
+            self.right_stick = [np.zeros(self.data_points), np.zeros(self.data_points)]
+            self.shoulder_buttons = [np.zeros(self.data_points), np.zeros(self.data_points)]
+            self.dpad_data = [np.zeros(self.data_points) for _ in range(4)]
+
+            plt.style.use('dark_background')
+
+            self.fig, (self.ax1, self.ax2, self.ax3, self.ax4) = plt.subplots(
+                4, 1, figsize=(10, 15), num="Controller Inputs"
+            )
+
+            self.left_lines = [self.ax1.plot([], [], label=f'Left Stick {"X" if i == 0 else "Y"}')[0] for i in range(2)]
+            self.right_lines = [self.ax2.plot([], [], label=f'Right Stick {"X" if i == 0 else "Y"}')[0] for i in range(2)]
+            self.shoulder_lines = [self.ax3.plot([], [], label=f'{"LT" if i == 0 else "RT"}')[0] for i in range(2)]
+            self.dpad_lines = [self.ax4.plot([], [],
+                                  label=f'DPad_{"Up" if i == 0 else "Right" if i == 1 else "Down" if i == 2 else "Left"}')[
+                                  0] for i in range(4)]
+
+            for ax in (self.ax1, self.ax2, self.ax3):
+                ax.set_xlim(0, self.time_window)
+                ax.set_ylim(-1, 1)  # Set Y-axis limits to -1 and 1
+                ax.set_xlabel('Time (s)')
+                ax.set_ylabel('Value')
+                ax.grid(True, alpha=0.3)
+
+            # Reset Y-axis limits for D-Pad plot
+            self.ax4.set_ylim(-1, 1)  # Set Y-axis limits for buttons plot
+
+            self.ax1.set_title('Left Joystick')
+            self.ax2.set_title('Right Joystick')
+            self.ax3.set_title('Shoulder Buttons (Triggers)')
+            self.ax4.set_title('D-Pad')
+
+            # Add button to stop the program
+            ax_button = plt.axes([0.45, 0.95, 0.1, 0.05])  # [left, bottom, width, height]
+            button = Button(ax_button, 'Stop')
+            button.on_clicked(self.stop_program)
+
+            self.ani = FuncAnimation(self.fig, self.update_plot, frames=None, interval=self.update_interval * 1000, blit=True,
+                                     cache_frame_data=False)
+
+    def stop_program(self, _event=None):
+        print("Stopping...")
+        self.stop_event.set()
+        plt.close('all')  # Close all figures
+
+    def update_data(self):
+        while not self.stop_event.is_set():
+            pygame.event.pump()
+
+            axes = [self.joystick.get_axis(i) for i in range(self.num_axes)]
+            dpad = list(self.joystick.get_hat(0)) if self.detect_d_pad_inputs else [0, 0, 0, 0]
+
+            with self.lock:
+                if self.plot_controller_inputs:
+                    for i in range(2):
+                        self.left_stick[i] = np.roll(self.left_stick[i], -1)
+                        self.left_stick[i][-1] = axes[i]
+                        self.right_stick[i] = np.roll(self.right_stick[i], -1)
+                        self.right_stick[i][-1] = axes[i + 2]
+                        self.shoulder_buttons[i] = np.roll(self.shoulder_buttons[i], -1)
+                        self.shoulder_buttons[i][-1] = axes[i + 4]
+
+                    for i in range(4):
+                        self.dpad_data[i] = np.roll(self.dpad_data[i], -1)
+                        self.dpad_data[i][-1] = dpad[i] if i < len(dpad) else 0
+
+            self.csv_writer.writerow([time.time() - self.start_time] + axes[:4] + axes[4:6] + dpad)
+            time.sleep(self.sleep_interval)
+
+    def update_plot(self, _frame):
+        current_time = time.time() - self.start_time
+        with self.lock:
+            for i, line in enumerate(self.left_lines):
+                line.set_data(self.timestamps + current_time - self.time_window, self.left_stick[i])
+            for i, line in enumerate(self.right_lines):
+                line.set_data(self.timestamps + current_time - self.time_window, self.right_stick[i])
+            for i, line in enumerate(self.shoulder_lines):
+                line.set_data(self.timestamps + current_time - self.time_window, self.shoulder_buttons[i])
+            for i, line in enumerate(self.dpad_lines):
+                line.set_data(self.timestamps + current_time - self.time_window, self.dpad_data[i])
+
+            start = current_time - self.time_window
+            end = current_time
+
+            for ax in (self.ax1, self.ax2, self.ax3, self.ax4):
+                ax.set_xlim(start, end)
+                ax.set_xticks(np.linspace(start, end, 6))
+                ax.set_xticklabels([f'{t:.1f}' for t in np.linspace(start, end, 6)])
+
+        return self.left_lines + self.right_lines + self.shoulder_lines + self.dpad_lines
+
+    def start_plot(self):
+        if self.plot_controller_inputs:
+            plt.show()
+
+    def cleanup(self):
+        self.stop_event.set()
+        self.data_thread.join()
+        self.file.close()
+        pygame.quit()
+
+    def get_controller_inputs(self):
+        with self.lock:
+            axes = [self.joystick.get_axis(i) for i in range(self.num_axes)]
+            dpad = list(self.joystick.get_hat(0)) if self.detect_d_pad_inputs else [0, 0, 0, 0]
+        return axes[:4] + axes[4:6] + dpad
+
 if __name__ == "__main__":
-    print("Press ESC to start/stop recording.")
-
-    # Instantiate the controller
-    controller = XboxController(plot_controller_inputs=False)  # Controller ohne Plot initialisieren
-
-    # Set up listeners
-    mouse_listener = mouse.Listener(on_move=lambda x, y: None, on_click=lambda *args: None, on_scroll=lambda *args: None)
-    keyboard_listener = keyboard.Listener(on_press=on_press, on_release=on_release)
-
-    mouse_listener.start()
-    keyboard_listener.start()
-
-    # Keep the script running
-    keyboard_listener.join()
-
-    # Clean up the controller
-    controller.cleanup()
+    controller = XboxController(plot_controller_inputs=True)
+    try:
+        controller.start_plot()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        controller.cleanup()
