@@ -9,11 +9,14 @@ using UnityEngine;
 public class MJPEGStream : MonoBehaviour
 {
     public int port = 8000;
+    public string subdir = "stream";
     public Camera cameraToCapture;
     public int width = 300;
     public int height = 225;
     public float frameRate = 10f; // Frame rate in frames per second
     private float frameDuration; // Duration of one frame in milliseconds
+    public bool rotateImage = true; // Boolean to determine if the image should be rotated
+
 
     private HttpListener httpListener;
     private bool isStreaming;
@@ -42,7 +45,7 @@ public class MJPEGStream : MonoBehaviour
     {
         Debug.Log("Starting server...");
         httpListener = new HttpListener();
-        httpListener.Prefixes.Add($"http://*:{port}/stream/");
+        httpListener.Prefixes.Add($"http://*:{port}/{subdir}/");
         httpListener.Start();
         isStreaming = true;
 
@@ -127,9 +130,11 @@ public class MJPEGStream : MonoBehaviour
             screenshot.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             screenshot.Apply();
 
-            // Drehen der Texture2D um 180 Grad
-            RotateTexture(screenshot);
-
+            // Conditionally rotate the Texture2D
+            if (rotateImage)
+            {
+                RotateTexture(screenshot);
+            }
             byte[] bytes = screenshot.EncodeToJPG();
 
             cameraToCapture.targetTexture = null;

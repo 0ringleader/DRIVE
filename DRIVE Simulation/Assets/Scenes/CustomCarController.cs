@@ -32,75 +32,79 @@ public class CustomCarController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+void Update()
+{
+    if (!isControlledByWebsite)
     {
-        if (!isControlledByWebsite)
+        // Abfrage des Inputs vom Mausrad
+        float mouseWheelInput = Input.GetAxis("Mouse ScrollWheel");
+        // Abfrage des Inputs von den Pfeiltasten (oder einem Gamepad)
+        float arrowKeyInput = Input.GetAxis("Vertical");
+
+        // Wenn ein Pfeiltasten-Eingang vorliegt, verwende diesen, um die Zielgeschwindigkeit direkt zu setzen
+        if (Mathf.Abs(arrowKeyInput) > Mathf.Epsilon)
         {
-            // Update the speed variable with the mouse wheel
-            float mouseWheelInput = Input.GetAxis("Mouse ScrollWheel");
-            float arrowKeyInput = Input.GetAxis("Vertical");
-
-            // Override mouse wheel input with arrow keys or controller axis input if they are active
-            if (Mathf.Abs(arrowKeyInput) > Mathf.Epsilon)
-            {
-                targetSpeed = arrowKeyInput * maxSpeed;
-            }
-            else
-            {
-                targetSpeed += mouseWheelInput;
-            }
-
-            // Update the steering variable with the arrow keys
-            targetSteering = Input.GetAxis("Horizontal") * 30;
+            targetSpeed = arrowKeyInput * maxSpeed;
+        }
+        // Wenn das Mausrad benutzt wird, addiere den Wert zu targetSpeed
+        else if (Mathf.Abs(mouseWheelInput) > Mathf.Epsilon)
+        {
+            targetSpeed += mouseWheelInput;
+            targetSpeed = Mathf.Clamp(targetSpeed, -maxSpeed, maxSpeed); // Clamping um sicherzustellen, dass targetSpeed im erlaubten Bereich bleibt
         }
 
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            ResetCar(); // Call the ResetCar method when 'R' is pressed
-        }
-
-        UpdateSteering();
-        UpdateSpeed();
-
-        // Car movement
-        var movement = transform.forward * speed * Time.deltaTime;
-        transform.position += movement;
-
-        // Drehung der Vorderräder
-        frontWheelLeft.localEulerAngles = new Vector3(0, 0, steering + 90);
-        frontWheelRight.localEulerAngles = new Vector3(0, 0, steering + 90);
-
-        // Berechnung des Rotationspunkts
-        var rotationPoint = new Vector3(0, 0, -0.0675f);
-
-        // Berechnung des Lenkwinkels
-        var steeringAngle = steering / wheelbase;
-
-        // Drehung des Autos um den Rotationspunkt
-        transform.RotateAround(transform.TransformPoint(rotationPoint), Vector3.up,
-            steeringAngle * speed * Time.deltaTime);
-
-        // Begrenzen Sie die Lenkung auf einen bestimmten Bereich, wenn nötig
-        steering = Mathf.Clamp(steering, -maxSteering, maxSteering);
-
-        // Begrenzen Sie die Geschwindigkeit auf einen bestimmten Bereich, wenn nötig
-        speed = Mathf.Clamp(speed, -maxSpeed, maxSpeed);
-
-        // Check if the car is below y = -1 and reset if necessary
-        if (transform.position.y < -1)
-        {
-            ResetCar();
-        }
-
-        // Update the UI with the current speed and steering values
-        if (uiButtonHandler != null)
-        {
-            float mappedSpeed = MapValue(speed, -maxSpeed, maxSpeed, -100, 100);
-            float mappedSteering = MapValue(steering, -maxSteering, maxSteering, -100, 100);
-            uiButtonHandler.UpdateSpeedText(speed, mappedSpeed);
-            uiButtonHandler.UpdateSteeringText(steering, mappedSteering);
-        }
+        // Die Lenkung wird weiterhin mit den Pfeiltasten gesteuert
+        targetSteering = Input.GetAxis("Horizontal") * maxSteering;
     }
+
+    if (Input.GetKeyDown(KeyCode.R))
+    {
+        ResetCar(); // Aufruf der ResetCar-Methode bei Druck der 'R'-Taste
+    }
+
+    UpdateSteering(); // Aktualisierung der Lenkung
+    UpdateSpeed();    // Aktualisierung der Geschwindigkeit
+
+    // Bewegung des Autos
+    var movement = transform.forward * speed * Time.deltaTime;
+    transform.position += movement;
+
+    // Drehung der Vorderräder
+    frontWheelLeft.localEulerAngles = new Vector3(0, 0, steering + 90);
+    frontWheelRight.localEulerAngles = new Vector3(0, 0, steering + 90);
+
+    // Berechnung des Rotationspunkts
+    var rotationPoint = new Vector3(0, 0, -0.0675f);
+
+    // Berechnung des Lenkwinkels
+    var steeringAngle = steering / wheelbase;
+
+    // Drehung des Autos um den Rotationspunkt
+    transform.RotateAround(transform.TransformPoint(rotationPoint), Vector3.up,
+        steeringAngle * speed * Time.deltaTime);
+
+    // Begrenzung der Lenkung
+    steering = Mathf.Clamp(steering, -maxSteering, maxSteering);
+
+    // Begrenzung der Geschwindigkeit
+    speed = Mathf.Clamp(speed, -maxSpeed, maxSpeed);
+
+    // Überprüfung, ob das Auto unter y = -1 ist und falls notwendig zurücksetzen
+    if (transform.position.y < -1)
+    {
+        ResetCar();
+    }
+
+    // Aktualisierung der UI-Elemente
+    if (uiButtonHandler != null)
+    {
+        float mappedSpeed = MapValue(targetSpeed, -maxSpeed, maxSpeed, -100, 100);
+        float mappedSteering = MapValue(targetSteering, -maxSteering, maxSteering, -100, 100);
+        uiButtonHandler.UpdateSpeedText(speed, mappedSpeed);
+        uiButtonHandler.UpdateSteeringText(steering, mappedSteering);
+    }
+}
+
 
     public void ResetCar()
     {
@@ -108,9 +112,8 @@ public class CustomCarController : MonoBehaviour
         speed = 0.0f; // Reset speed
         steering = 0.0f; // Reset steering
         //targetSpeed = 0.0f; // Reset target speed
-        targetSteering = 0.0f; // Reset target steering
+        //targetSteering = 0.0f; // Reset target steering
         transform.rotation = Quaternion.identity; // Reset rotation
-        currentSplineT = 0.0f; // Reset Fortschritt auf der Spline
     }
 
     public void SetControlValues(float speed, float steering)
@@ -135,7 +138,14 @@ public class CustomCarController : MonoBehaviour
 
     void UpdateSpeed()
     {
-        float rate = speed < targetSpeed ? accelerationRate : brakingRate;
+        // Bestimme, ob das Auto beschleunigt oder bremst
+        bool isAccelerating = (targetSpeed > speed && speed >= 0) || (targetSpeed < speed && speed <= 0);
+    
+        // Verwende die Beschleunigungsrate, wenn das Auto beschleunigt, andernfalls die Bremsrate
+        float rate = isAccelerating ? accelerationRate : brakingRate;
+
+        // Aktualisiere die Geschwindigkeit mit der korrekten Rate
         speed = Mathf.MoveTowards(speed, targetSpeed, rate * Time.deltaTime);
     }
+
 }
