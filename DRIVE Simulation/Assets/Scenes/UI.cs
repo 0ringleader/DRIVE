@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 public class UIButtonHandler : MonoBehaviour
 {
@@ -13,7 +14,8 @@ public class UIButtonHandler : MonoBehaviour
     private TextMeshProUGUI steeringText; // Reference to the TextMeshPro UI element for steering
     private Slider gameSpeedSlider; // Reference to the game speed slider
     private TextMeshProUGUI gameSpeedText; // Reference to the TextMeshPro UI element for game speed
-
+    private TMP_Dropdown resolutionDropdown; // Reference to the resolution dropdown
+    
     void Start()
     {
         // Find the UI elements in the scene
@@ -36,18 +38,47 @@ public class UIButtonHandler : MonoBehaviour
         resetCarButton.onClick.AddListener(ResetCar);
         controlByWebsiteToggle.onValueChanged.AddListener(delegate { ToggleControlByWebsite(controlByWebsiteToggle); });
         toggleOffRoadReset.onValueChanged.AddListener(delegate { ToggleOffRoadReset(toggleOffRoadReset); });
-
+        resolutionDropdown = GameObject.Find("ResolutionDropdown").GetComponent<TMP_Dropdown>();
+        
         // Add listener to the syncToGameSpeed toggle
         syncToGameSpeedToggle.onValueChanged.AddListener(delegate { ToggleSyncToGameSpeed(syncToGameSpeedToggle); });
 
         // Add listener to the slider
         gameSpeedSlider.onValueChanged.AddListener(UpdateGameSpeed);
 
+        PopulateResolutionDropdown();
+        
+        // Add listener to the resolution dropdown
+        resolutionDropdown.onValueChanged.AddListener(delegate { ChangeResolution(resolutionDropdown); });
+
         // Initialize the content of the mouse wheel text
         ToggleMouseWheelText(controlByWebsiteToggle.isOn);
 
         // Set initial game speed
         UpdateGameSpeed(gameSpeedSlider.value);
+    }
+    
+    void PopulateResolutionDropdown()
+    {
+        resolutionDropdown.ClearOptions(); // Alte Optionen entfernen
+
+        Resolution[] resolutions = Screen.resolutions; // Alle verfügbaren Auflösungen abrufen
+        List<string> options = new List<string>();
+
+        foreach (Resolution res in resolutions)
+        {
+            string option = res.width + " x " + res.height;
+            options.Add(option);
+        }
+
+        resolutionDropdown.AddOptions(options); // Optionen hinzufügen
+        resolutionDropdown.onValueChanged.AddListener(delegate { SetResolution(resolutionDropdown.value); });
+    }
+
+    void SetResolution(int resolutionIndex)
+    {
+        Resolution resolution = Screen.resolutions[resolutionIndex];
+        Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreen);
     }
 
     void ToggleGroundTexture(Toggle toggle)
@@ -136,5 +167,28 @@ public class UIButtonHandler : MonoBehaviour
             gameSpeedText.text = $"Game Speed: {newSpeed:F2}x";
         }
         mjpegStream.setGameSpeed(newSpeed);
+    }
+    void ChangeResolution(TMP_Dropdown dropdown)
+    {
+        // Change the screen resolution based on the dropdown selection
+        switch (dropdown.value)
+        {
+            case 0:
+                Screen.SetResolution(640, 480, Screen.fullScreen); // Option 1: 640x480
+                break;
+            case 1:
+                Screen.SetResolution(1280, 720, Screen.fullScreen); // Option 2: 1280x720
+                break;
+            case 2:
+                Screen.SetResolution(1920, 1080, Screen.fullScreen); // Option 3: 1920x1080
+                break;
+            case 3:
+                Screen.SetResolution(2560, 1440, Screen.fullScreen); // Option 4: 2560x1440
+                break;
+            case 4:
+                Screen.SetResolution(3840, 2160, Screen.fullScreen); // Option 5: 3840x2160
+                break;
+            // Add more cases for additional resolutions if needed
+        }
     }
 }
