@@ -1216,7 +1216,6 @@ MonoBehaviour:
   roadTag: RoadMesh
   statusText: {fileID: 500225285}
   carController: {fileID: 1125947878}
-  roadStatusSender: {fileID: 795969107}
 --- !u!54 &795969106
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1257,6 +1256,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   port: 8000
+  offRoadDetection: {fileID: 795969105}
 --- !u!1 &827963291
 GameObject:
   m_ObjectHideFlags: 0

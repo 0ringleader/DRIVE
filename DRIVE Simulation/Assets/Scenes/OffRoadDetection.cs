@@ -5,12 +5,10 @@ using UnityEngine.UI;
 
 public class OffRoadDetection : MonoBehaviour
 {
-    public string roadTag = "RoadMesh"; 
-    private Dictionary<string, bool> wheelStatus; 
-    public Text statusText; 
+    public string roadTag = "RoadMesh";
+    private Dictionary<string, bool> wheelStatus;
+    public Text statusText;
     public CustomCarController carController; // Reference to CustomCarController
-    public RoadStatusSender roadStatusSender;
-
     void Start()
     {
         wheelStatus = new Dictionary<string, bool>
@@ -20,7 +18,7 @@ public class OffRoadDetection : MonoBehaviour
             { "WheelVL", true },
             { "WheelVR", true }
         };
-        statusText.gameObject.SetActive(false); 
+        statusText.gameObject.SetActive(false);
         UpdateOffRoadStatus();
     }
 
@@ -29,7 +27,7 @@ public class OffRoadDetection : MonoBehaviour
         Debug.Log("OnCollisionEnter aufgerufen mit Tag: " + collision.collider.tag);
         if (wheelStatus.ContainsKey(collision.collider.tag) || collision.collider.GetComponent<MeshCollider>() != null)
         {
-            wheelStatus[collision.collider.tag] = true; 
+            wheelStatus[collision.collider.tag] = true;
             UpdateOffRoadStatus();
         }
     }
@@ -39,7 +37,7 @@ public class OffRoadDetection : MonoBehaviour
         Debug.Log("OnCollisionExit aufgerufen mit Tag: " + collision.collider.tag);
         if (wheelStatus.ContainsKey(collision.collider.tag) || collision.collider.GetComponent<MeshCollider>() != null)
         {
-            wheelStatus[collision.collider.tag] = false; 
+            wheelStatus[collision.collider.tag] = false;
             UpdateOffRoadStatus();
         }
     }
@@ -112,6 +110,19 @@ public class OffRoadDetection : MonoBehaviour
             statusText.color = new Color(0.0f, 0.5f, 0.0f);
             Debug.Log("Das Auto ist auf der Straße.");
         }
-//        roadStatusSender.SendStatusToServer(offRoad);
     }
+    public bool IsOffRoad()
+    {
+        bool allOnRoad = true;
+        foreach (var status in wheelStatus.Values)
+        {
+            if (!status)
+            {
+                allOnRoad = false;
+                break;
+            }
+        }
+        return !allOnRoad;
+    }
+
 }
