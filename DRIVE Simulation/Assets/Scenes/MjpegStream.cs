@@ -16,7 +16,8 @@ public class MJPEGStream : MonoBehaviour
     public float frameRate = 10f; // Frame rate in frames per second
     private float frameDuration; // Duration of one frame in milliseconds
     public bool rotateImage = true; // Boolean to determine if the image should be rotated
-
+    public bool syncToGameSpeed = false;
+    private float gameSpeed = 1f;
 
     private HttpListener httpListener;
     private bool isStreaming;
@@ -103,7 +104,16 @@ public class MJPEGStream : MonoBehaviour
                 Debug.Log("Frame sent.");
 
                 // Sleep for the frame duration to control the frame rate
-                Thread.Sleep((int)frameDuration);
+                if (syncToGameSpeed)
+                {
+                    Thread.Sleep((int)(frameDuration / gameSpeed));
+                }
+                else
+                {
+                    Thread.Sleep((int)frameDuration);
+                    
+                }
+                
             }
         }
         catch (Exception ex)
@@ -174,5 +184,9 @@ public class MJPEGStream : MonoBehaviour
             httpListener.Stop();
             httpListener.Close();
         }
+    }
+    public void setGameSpeed(float speed)
+    {
+        gameSpeed = speed;
     }
 }

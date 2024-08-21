@@ -34,9 +34,9 @@ def process_image_and_control(frame):
     pygame.display.update()
 
 #car_control = CarControl('192.168.1.162', 8000, 'http://192.168.1.162:8000/stream')
-car_control = CarControl('10.42.0.1', 8000, 'http://10.42.0.1:8000/stream')
-unity_control = CarControl('10.42.0.186', 8000, 'http://10.42.0.186:8000/stream')
-#unity_control = CarControl('127.0.0.1', 8000, 'http://127.0.0.1:8000/stream')
+#car_control = CarControl('10.42.0.1', 8000, 'http://10.42.0.1:8000/stream')
+#unity_control = CarControl('10.42.0.186', 8000, 'http://10.42.0.186:8000/stream')
+unity_control = CarControl('127.0.0.1', 8000, 'http://127.0.0.1:8000/stream')
 
 
 
@@ -73,14 +73,14 @@ try:
         
         # Überprüfen, ob eine Änderung stattgefunden hat
         if speed != current_speed or angle != current_angle:
-            car_control.setControlData(speed, angle)
+           # car_control.setControlData(speed, angle)
             unity_control.setControlData(speed, angle)
 
             current_speed = speed
             current_angle = angle
             print(f"{speed} {angle}")
         
-        frame = car_control.read_frame()
+        #frame = car_control.read_frame()
         frame = unity_control.read_frame()
         if frame is not None:
             process_image_and_control(frame)
