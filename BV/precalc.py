@@ -1,5 +1,3 @@
-#precalc.py edited 2308 @9:50AM by Sven
-
 import cv2
 import numpy as np
 import os
@@ -9,6 +7,7 @@ from configparser import ConfigParser
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import collections
+import csv
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -16,6 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Load configuration variables
 config = ConfigParser()
 config.read('config.ini')
+
 
 # Helper functions for conversion and type checking
 def get_bool(section, var_name, default=None):
@@ -26,6 +26,7 @@ def get_bool(section, var_name, default=None):
             f"The value for {var_name} in {section} cannot be converted to boolean. Using default value {default}.")
         return default
 
+
 def get_float(section, var_name, default=None):
     try:
         return config.getfloat(section, var_name, fallback=default)
@@ -34,6 +35,7 @@ def get_float(section, var_name, default=None):
             f"The value for {var_name} in {section} cannot be converted to float. Using default value {default}.")
         return default
 
+
 def get_int(section, var_name, default=None):
     try:
         return config.getint(section, var_name, fallback=default)
@@ -41,6 +43,7 @@ def get_int(section, var_name, default=None):
         logging.warning(
             f"The value for {var_name} in {section} cannot be converted to int. Using default value {default}.")
         return default
+
 
 def get_tuple(section, var_name, default=None):
     value = config.get(section, var_name, fallback=default)
@@ -53,6 +56,7 @@ def get_tuple(section, var_name, default=None):
             f"The value for {var_name} in {section} cannot be converted to tuple of int. Using default value {default}.")
         return default
 
+
 # Get variables from the configuration file and convert
 xSize = get_int('precalc', 'xsize', 256)
 ySize = get_int('precalc', 'ysize', 192)
@@ -64,7 +68,7 @@ denoising_template_window_size = get_int('precalc', 'denoising_template_window_s
 denoising_search_window_size = get_int('precalc', 'denoising_search_window_size', 21)
 adaptive_thresh_block_size = get_int('precalc', 'adaptive_thresh_block_size', 11)
 adaptive_thresh_C = get_float('precalc', 'adaptive_thresh_C', 2)
-rotate = get_bool('precalc', 'rotate', True)
+rotate = get_bool('precalc', 'rotate', False)
 apply_filter = get_bool('precalc', 'apply_filter', True)
 apply_canny = get_bool('precalc', 'apply_canny', True)
 draw_center_line = get_bool('precalc', 'drawcenterline', True)
@@ -75,14 +79,17 @@ input_dir = "PreCalcIn"
 output_dir = "PreCalcOut"
 os.makedirs(output_dir, exist_ok=True)
 
+
 # Function to adjust contrast and brightness
 def adjust_contrast_brightness(image_gray, alpha=1.5, beta=30):
     return cv2.convertScaleAbs(image_gray, alpha=alpha, beta=beta)
+
 
 # Function to apply CLAHE
 def apply_clahe(image_gray):
     clahe = cv2.createCLAHE(clipLimit=clahe_clipLimit, tileGridSize=clahe_tileGridSize)
     return clahe.apply(image_gray)
+
 
 # Function to reduce noise
 def reduce_noise(image_gray):
@@ -93,6 +100,7 @@ def reduce_noise(image_gray):
     denoised = cv2.fastNlMeansDenoising(blurred, None, denoising_h, denoising_template_window_size,
                                         denoising_search_window_size)
     return denoised
+
 
 # Function to binarize the image
 def binarize_image(image_gray):
@@ -105,15 +113,18 @@ def binarize_image(image_gray):
     binary_combined = cv2.bitwise_and(binary_global, binary_adaptive)
     return binary_combined
 
+
 # Function to detect edges using Canny
 def apply_canny_edge_detection(image_binary):
     return cv2.Canny(image_binary, 100, 200)
+
 
 # Function to crop the image (if needed to focus on specific region)
 def crop_image(image):
     height, width = image.shape[:2]
     cropped = image[height // 2:, :]
     return cropped
+
 
 # Function to find lane lines using Hough Transform
 def find_lane_lines(image):
@@ -134,6 +145,7 @@ def find_lane_lines(image):
                 right_lines.append(line)
     return left_lines, right_lines
 
+
 # Function to average and extrapolate lane lines
 def average_lane_lines(image, lines):
     if len(lines) == 0:
@@ -148,19 +160,22 @@ def average_lane_lines(image, lines):
     x2 = int((y2 - intercept) / slope)
     return [(x1, y1, x2, y2)]
 
+
 # Function to draw lines on an image
 def draw_lines(image, lines, color=(255, 0, 0), thickness=5):
     if lines is None:
         return
     for line in lines:
-        x1, y1, x2, y2 = map(int, line) # Ensure coordinates are integers
+        x1, y1, x2, y2 = map(int, line)  # Ensure coordinates are integers
         cv2.line(image, (x1, y1), (x2, y2), color, thickness)
+
 
 # Function to process the image through a customizable pipeline
 def process_image_pipeline(image, steps):
     for step in steps:
         image = step(image)
     return image
+
 
 # Keep track of previous lane lines for fallback
 previous_left_line = None
@@ -169,8 +184,10 @@ previous_right_line = None
 # Deque to store the last few center line calculations for smoothing
 center_line_queue = collections.deque(maxlen=5)
 
+
 def calculate_moving_average(values):
     return np.mean(values, axis=0)
+
 
 # Updated function to process a single image
 def process_single_image(input_path, output_path_dir, filename):
@@ -252,6 +269,27 @@ def process_single_image(input_path, output_path_dir, filename):
     output_path = os.path.join(output_path_dir, filename)
     cv2.imwrite(output_path, img_final)
 
+
+# Function to read and validate steering data from CSV
+def read_and_validate_steering(csv_path, output_csv_path):
+    with open(csv_path, 'r', newline='') as csvfile, open(output_csv_path, 'w', newline='') as outputfile:
+        reader = csv.reader(csvfile)
+        writer = csv.writer(outputfile)
+
+        headers = next(reader)  # Read the header row
+        writer.writerow(headers)  # Write the header to the output file
+
+        for row in reader:
+            # Assuming the steering angle is in a specific column, e.g., index 1
+            steering_angle = float(row[1])
+            if steering_angle < -100:
+                steering_angle = -100
+            elif steering_angle > 100:
+                steering_angle = 100
+            row[1] = steering_angle  # Update the steering angle in the row
+            writer.writerow(row)  # Write the updated row to the output file
+
+
 # Main processing function for images and CSV files
 def process_images_and_csv(input_dir, output_dir):
     total_folders = sum(1 for _, dirnames, _ in os.walk(input_dir) if not dirnames)
@@ -271,8 +309,8 @@ def process_images_and_csv(input_dir, output_dir):
         output_path_dir = os.path.join(output_dir, relative_path)
         os.makedirs(output_path_dir, exist_ok=True)
 
-        # Copy CSV file to output directory
-        shutil.copy2(csv_path, os.path.join(output_path_dir, csv_file))
+        output_csv_path = os.path.join(output_path_dir, csv_file)
+        read_and_validate_steering(csv_path, output_csv_path)  # Validate and copy CSV file to output directory
 
         total_images = len(image_files)
         logging.info(f"Starting with folder {relative_path}, total images: {total_images}")
@@ -292,6 +330,7 @@ def process_images_and_csv(input_dir, output_dir):
         logging.info(f"Completed folder {processed_folders}/{total_folders}: {relative_path}")
 
     logging.info("All images and CSV files have been processed and saved in the output folder.")
+
 
 # Main execution
 if __name__ == "__main__":
