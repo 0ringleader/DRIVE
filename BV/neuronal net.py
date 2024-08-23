@@ -1,5 +1,5 @@
-#neuronal net.py edited 1408 @9:25AM by Sven
-#Code implements a CNN
+# neuronalnet.py edited 2308 @9:50AM by Sven
+# Code implements a CNN
 
 import numpy as np
 import os
@@ -7,32 +7,31 @@ import pandas as pd
 from PIL import Image
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization, Activation
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.losses import MeanSquaredError
-from tensorflow.keras.metrics import MeanAbsoluteError
-from tensorflow.keras.regularizers import l1_l2
+from tensorflow.keras.losses import MeanAbsoluteError
+from tensorflow.keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import time
 import logging
+from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 from setVariables import SetVariables, replySetVariables
 
 # Load configuration variables
 config = SetVariables('config.ini')
 variables = config.get_variables('neuronalnet.py')
-learning_rate = variables.get('learning_rate', 0.0005)
+learning_rate = variables.get('learning_rate', 0.0001)
 epochs = variables.get('epochs', 50)
 print_console = variables.get('printConsole', True)
 batch_size = variables.get('batch_size', 32)
 validation_split = variables.get('validation_split', 0.2)
-l1_reg = variables.get('l1_reg', 0.0)
-l2_reg = variables.get('l2_reg', 0.0)
-dropout_rate = variables.get('dropout_rate', 0.3)
+l2_reg = variables.get('l2_reg', 0.01)
+dropout_rate = variables.get('dropout_rate', 0.5)
 data_dir = variables.get('data_dir', "F:\\Einige Dateien\\DRIVE\\PreCalcOut\\")
-xSize = variables.get('xSize', 256)  # Default to 256 if not found
-ySize = variables.get('ySize', 192)  # Default to 192 if not found
-patience = variables.get('patience', 1000)
+xSize = variables.get('xSize', 256)
+ySize = variables.get('ySize', 192)
+patience = variables.get('patience', 10)
 data_source = variables.get('data_source', 'real')
 
 # Generate filename with hyperparameters
@@ -43,7 +42,7 @@ log_file = f'training_log{filename_suffix}.txt'
 logging.basicConfig(filename=log_file, level=logging.INFO, format='%(message)s')
 
 # Use xSize and ySize when defining input_shape
-input_shape = (ySize, xSize, 3)  # Assuming 3 color channels
+input_shape = (ySize, xSize, 3)
 
 replySetVariables('neuronalnet.py')
 
@@ -51,6 +50,7 @@ replySetVariables('neuronalnet.py')
 def dbg_print(message):
     if print_console:
         print(message)
+    logging.info(message)  # Also log messages to the log file
 
 # Function to load and preprocess data from multiple folders
 def load_behavioral_cloning_dataset(data_dir, data_source):
@@ -61,30 +61,41 @@ def load_behavioral_cloning_dataset(data_dir, data_source):
         return pd.DataFrame()
 
     csv_filename = 'control_data.csv' if data_source == 'real' else 'input_data.csv'
+    data_type = "real" if data_source == 'real' else "simulation"
 
-    for subdir, _, _ in os.walk(data_dir):
-        csv_path = os.path.join(subdir, csv_filename)
-        if not os.path.exists(csv_path):
-            dbg_print(f"Warning: CSV file does not exist at path {csv_path}")
-            continue
+    dbg_print(f"Loading data from {data_type}...")
 
-        try:
-            df = pd.read_csv(csv_path)
-            df['subdir'] = subdir  # Add the directory for later access
+    for subdir, _, files in os.walk(data_dir):
+        if csv_filename in files:
+            csv_path = os.path.join(subdir, csv_filename)
+            if not os.path.exists(csv_path):
+                dbg_print(f"Warning: CSV file does not exist at path {csv_path}")
+                continue
 
-            if data_source == 'real':
-                if 'dir' in df.columns:
-                    df = df.rename(
-                        columns={"framecount": "frame_count", "speed": "speed", "angle": "angle", "dir": "image_filename"})
+            try:
+                df = pd.read_csv(csv_path)
+                df['subdir'] = subdir  # Add the directory for later access
+
+                if data_source == 'real':
+                    if 'dir' in df.columns:
+                        df = df.rename(
+                            columns={"framecount": "frame_count", "speed": "speed", "angle": "angle", "dir": "image_filename"})
+                    else:
+                        dbg_print(f"Error: 'dir' column not found in CSV file at {csv_path}")
+                        continue
                 else:
-                    dbg_print(f"Error: 'dir' column not found in CSV file at {csv_path}")
-                    continue
-            else:
-                df['image_filename'] = df['frame_count'].apply(lambda x: f"frame_{x:05d}.png")
+                    df['image_filename'] = df['frame_count'].apply(lambda x: f"frame_{x:05d}.png")
+                    # Assign steering input angle from left_stick_x or right_stick_x
+                    if 'left_stick_x' in df.columns:
+                        df['angle'] = df['left_stick_x']
+                    else:
+                        dbg_print(f"Error: 'left_stick_x' column not found in CSV file at {csv_path}")
+                        continue
 
-            data.append(df)
-        except Exception as e:
-            dbg_print(f"Warning: Cannot read CSV file at {csv_path}: {str(e)}")
+                dbg_print(f"Loaded {len(df)} rows from {csv_path}")
+                data.append(df)
+            except Exception as e:
+                dbg_print(f"Warning: Cannot read CSV file at {csv_path}: {str(e)}")
 
     if len(data) == 0:
         dbg_print("Error: No data was successfully loaded.")
@@ -115,40 +126,50 @@ def create_dataset(df, batch_size, is_training=True):
 
                 if os.path.exists(img_path):
                     img = preprocess_image(img_path)
-                    targets = np.array([row['angle'], row['speed'], row['speed']], dtype=np.float32)  # angle for left_stick_x, speed for acceleration and right_trigger
-                    yield img, targets
+                    # Only the angle is used as the target now
+                    target = np.array([row['angle']], dtype=np.float32)
+                    yield img, target
 
     dataset = tf.data.Dataset.from_generator(generator, output_types=(tf.float32, tf.float32),
-                                             output_shapes=((ySize, xSize, 3), (3,)))
+                                             output_shapes=((ySize, xSize, 3), (1,)))
     if is_training:
         dataset = dataset.shuffle(buffer_size=10000)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset
 
-# Adjusted model to predict three outputs
+# Simple CNN model to predict the angle only
 def create_model(input_shape):
     model = Sequential([
-        Conv2D(24, (5, 5), strides=(2, 2), activation='relu', input_shape=input_shape, kernel_regularizer=l1_l2(l1=l1_reg, l2=l2_reg)),
-        BatchNormalization(),
-        Conv2D(36, (5, 5), strides=(2, 2), activation='relu', kernel_regularizer=l1_l2(l1=l1_reg, l2=l2_reg)),
-        BatchNormalization(),
-        Conv2D(48, (3, 3), strides=(1, 1), activation='relu', kernel_regularizer=l1_l2(l1=l1_reg, l2=l2_reg)),
-        BatchNormalization(),
-        Conv2D(64, (3, 3), strides=(1, 1), activation='relu', kernel_regularizer=l1_l2(l1=l1_reg, l2=l2_reg)),
-        BatchNormalization(),
-        Conv2D(64, (3, 3), strides=(1, 1), activation='relu', kernel_regularizer=l1_l2(l1=l1_reg, l2=l2_reg)),
-        BatchNormalization(),
+        Conv2D(8, (3, 3), strides=(1, 1), activation='relu', input_shape=input_shape,
+               kernel_regularizer=l2(l2_reg)),
         MaxPooling2D(2, 2),
+        BatchNormalization(),
+
+        Conv2D(16, (3, 3), activation='relu', kernel_regularizer=l2(l2_reg)),
+        MaxPooling2D(2, 2),
+        BatchNormalization(),
+
+        Conv2D(32, (3, 3), activation='relu', kernel_regularizer=l2(l2_reg)),
+        MaxPooling2D(2, 2),
+        BatchNormalization(),
+
+        Conv2D(64, (3, 3), activation='relu', kernel_regularizer=l2(l2_reg)),
+        MaxPooling2D(2, 2),
+        BatchNormalization(),
+
         Flatten(),
-        Dense(100, activation='relu', kernel_regularizer=l1_l2(l1=l1_reg, l2=l2_reg)),
+
+        Dense(128, activation='relu', kernel_regularizer=l2(l2_reg)),
         Dropout(dropout_rate),
-        Dense(50, activation='relu', kernel_regularizer=l1_l2(l1=l1_reg, l2=l2_reg)),
-        Dense(10, activation='relu', kernel_regularizer=l1_l2(l1=l1_reg, l2=l2_reg)),
-        Dense(3)  # Output layer for angle (left_stick_x), speed (acceleration), speed (right_trigger)
+
+        Dense(32, activation='relu', kernel_regularizer=l2(l2_reg)),
+        Dropout(dropout_rate),
+
+        Dense(1)  # Output layer only for the angle now
     ])
 
-    model.compile(optimizer=Adam(learning_rate=learning_rate), loss=MeanSquaredError(), metrics=['accuracy'])
+    model.compile(optimizer=Adam(learning_rate=learning_rate), loss=MeanAbsoluteError(), metrics=['mae'])
 
     return model
 
@@ -160,8 +181,8 @@ def log_training_progress(message, log_file, metrics=None):
     if metrics is not None:
         with open(log_file, 'a') as f:
             f.write(f"Epoch {metrics['epoch']:03d}: "
-                    f"- loss: {metrics['loss']:.4f} - accuracy: {metrics['accuracy']:.2%} "
-                    f"- val_loss: {metrics['val_loss']:.4f} - val_accuracy: {metrics['val_accuracy']:.2%}\n")
+                    f"- loss: {metrics['loss']:.4f} - mae: {metrics['mae']:.2%} "
+                    f"- val_loss: {metrics['val_loss']:.4f} - val_mae: {metrics['val_mae']:.2%}\n")
     with open(log_file, 'a') as f:
         f.write(message + "\n")
     dbg_print(message)
@@ -186,9 +207,9 @@ class CustomCallback(tf.keras.callbacks.Callback):
         metrics = {
             'epoch': epoch + 1,
             'loss': logs.get('loss'),
-            'accuracy': logs.get('accuracy'),
+            'mae': logs.get('mae'),
             'val_loss': logs.get('val_loss'),
-            'val_accuracy': logs.get('val_accuracy')
+            'val_mae': logs.get('val_mae')
         }
         epoch_time = time.time() - self.total_time
         self.total_time = time.time()
@@ -200,13 +221,14 @@ def train_model(model, train_gen, val_gen, train_data_len, val_data_len, epochs,
     steps_per_epoch = train_data_len // batch_size
     validation_steps = val_data_len // batch_size
 
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
-    model_checkpoint = tf.keras.callbacks.ModelCheckpoint('best_model.h5', monitor='val_loss', save_best_only=True)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
+    model_checkpoint = ModelCheckpoint('best_model.h5', monitor='val_loss', save_best_only=True)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=1e-6)
     custom_callback = CustomCallback(log_file, start_time)
 
     history = model.fit(train_gen, epochs=epochs, validation_data=val_gen, steps_per_epoch=steps_per_epoch,
                         validation_steps=validation_steps, verbose=1,
-                        callbacks=[early_stopping, model_checkpoint, custom_callback])
+                        callbacks=[early_stopping, model_checkpoint, reduce_lr, custom_callback])
 
     total_time += time.time() - start_time
 
@@ -228,34 +250,34 @@ def safe_extract(metrics_part, key):
 def plot_training_progress(training_logs):
     train_losses = []
     val_losses = []
-    train_accuracies = []
-    val_accuracies = []
+    train_maes = []
+    val_maes = []
 
     for log in training_logs:
-        if "loss: " in log and "accuracy: " in log:
+        if "loss: " in log and "mae: " in log:
             parts = log.split(' - ')
             metrics_part = ' - '.join(parts[1:])  # Join all parts after the first one
 
             loss = safe_extract(metrics_part, 'loss')
-            accuracy = safe_extract(metrics_part, 'accuracy')
+            mae = safe_extract(metrics_part, 'mae')
             val_loss = safe_extract(metrics_part, 'val_loss')
-            val_accuracy = safe_extract(metrics_part, 'val_accuracy')
+            val_mae = safe_extract(metrics_part, 'val_mae')
 
-            if None not in [loss, accuracy, val_loss, val_accuracy]:
+            if None not in [loss, mae, val_loss, val_mae]:
                 train_losses.append(loss)
                 val_losses.append(val_loss)
-                train_accuracies.append(accuracy)
-                val_accuracies.append(val_accuracy)
+                train_maes.append(mae)
+                val_maes.append(val_mae)
 
     d_train_losses = np.diff(train_losses)
     d_val_losses = np.diff(val_losses)
-    d_train_accuracies = np.diff(train_accuracies)
-    d_val_accuracies = np.diff(val_accuracies)
+    d_train_maes = np.diff(train_maes)
+    d_val_maes = np.diff(val_maes)
 
     dbg_print(f"Training Losses: {train_losses}")
     dbg_print(f"Validation Losses: {val_losses}")
-    dbg_print(f"Training Accuracies: {train_accuracies}")
-    dbg_print(f"Validation Accuracies: {val_accuracies}")
+    dbg_print(f"Training MAEs: {train_maes}")
+    dbg_print(f"Validation MAEs: {val_maes}")
 
     epochs = range(1, len(train_losses) + 1)
     plt.figure(figsize=(12, 10))
@@ -269,11 +291,11 @@ def plot_training_progress(training_logs):
     plt.legend()
 
     plt.subplot(2, 2, 2)
-    plt.plot(epochs, train_accuracies, 'r--', label='Training Accuracy')
-    plt.plot(epochs, val_accuracies, 'b-', label='Validation Accuracy')
-    plt.title('Training and Validation Accuracy')
+    plt.plot(epochs, train_maes, 'r--', label='Training MAE')
+    plt.plot(epochs, val_maes, 'b-', label='Validation MAE')
+    plt.title('Training and Validation MAE')
     plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
+    plt.ylabel('Mean Absolute Error')
     plt.legend()
 
     plt.subplot(2, 2, 3)
@@ -285,11 +307,11 @@ def plot_training_progress(training_logs):
     plt.legend()
 
     plt.subplot(2, 2, 4)
-    plt.plot(range(1, len(d_train_accuracies) + 1), d_train_accuracies, 'r--', label='Training Accuracy Derivative')
-    plt.plot(range(1, len(d_val_accuracies) + 1), d_val_accuracies, 'b-', label='Validation Accuracy Derivative')
-    plt.title('Change in Training and Validation Accuracy')
+    plt.plot(range(1, len(d_train_maes) + 1), d_train_maes, 'r--', label='Training MAE Derivative')
+    plt.plot(range(1, len(d_val_maes) + 1), d_val_maes, 'b-', label='Validation MAE Derivative')
+    plt.title('Change in Training and Validation MAE')
     plt.xlabel('Epochs')
-    plt.ylabel('Delta Accuracy')
+    plt.ylabel('Delta MAE')
     plt.legend()
 
     plt.tight_layout()
@@ -341,7 +363,7 @@ def main():
         model.save(model_path)
         dbg_print(f"Created and saved a new model to {model_path}")
 
-    model.compile(optimizer=Adam(learning_rate=learning_rate), loss=MeanSquaredError(), metrics=['accuracy'])
+    model.compile(optimizer=Adam(learning_rate=learning_rate), loss=MeanAbsoluteError(), metrics=['mae'])
 
     model.summary()
 

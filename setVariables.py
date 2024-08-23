@@ -1,5 +1,3 @@
-#setVariables.py edited 2008 @2:25PM by Sven
-
 import configparser
 
 class SetVariables:
@@ -10,9 +8,10 @@ class SetVariables:
         self.expected_variables = {
             'precalc.py': ['xsize', 'ysize', 'clahe_cliplimit', 'clahe_tilegridsize', 'gaussian_blur_ksize',
                            'denoising_h', 'denoising_template_window_size', 'denoising_search_window_size',
-                           'adaptive_thresh_block_size', 'adaptive_thresh_C', 'rotate'],
+                           'adaptive_thresh_block_size', 'adaptive_thresh_C', 'rotate', 'apply_filter', 'apply_canny', 'drawcenterline', 'centerline_sensitivity'],
             'neuronalnet.py': ['learning_rate', 'epochs', 'batch_size', 'validation_split', 'l1_reg', 'l2_reg',
-                               'dropout_rate', 'data_dir', 'xSize', 'ySize', 'printConsole']
+                               'dropout_rate', 'data_dir', 'xSize', 'ySize', 'printConsole'],
+            'simulation': ['drive_delay', 'steering_damping_factor', 'mirrorSteering']  # New expected variables for simulation section
         }
 
     def get_variables(self, section):
@@ -43,7 +42,7 @@ class SetVariables:
         if section in self.expected_variables:
             expected_vars = self.expected_variables[section]
             for var in variables.keys():
-                if var not in expected_vars:
+                if var.lower() not in [ev.lower() for ev in expected_vars]:  # Ignore case when checking variable names
                     print(f"Warning: Unexpected variable '{var}' in section '{section}'")
 
 def replySetVariables(section):
