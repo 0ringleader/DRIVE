@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement; // Notwendig für Szenenmanagement
 using System.Collections.Generic;
+using static System.Net.Mime.MediaTypeNames;
 
 public class UIButtonHandler : MonoBehaviour
 {
@@ -45,6 +46,10 @@ public class UIButtonHandler : MonoBehaviour
 
     private bool isUIVisible = true; // Variable to track UI visibility
 
+        void Awake()
+    {
+        Application.targetFrameRate = 120;
+    }
         void Start()
     {
         // Find the UI elements in the scene
