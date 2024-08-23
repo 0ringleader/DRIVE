@@ -1,5 +1,5 @@
-#neuronal net.py edited 2308 @9:50AM by Sven
-#Code implements a CNN
+# neuronalnet.py edited 2308 @9:50AM by Sven
+# Code implements a CNN
 
 import numpy as np
 import os
@@ -50,6 +50,7 @@ replySetVariables('neuronalnet.py')
 def dbg_print(message):
     if print_console:
         print(message)
+    logging.info(message)  # Also log messages to the log file
 
 # Function to load and preprocess data from multiple folders
 def load_behavioral_cloning_dataset(data_dir, data_source):
@@ -60,30 +61,41 @@ def load_behavioral_cloning_dataset(data_dir, data_source):
         return pd.DataFrame()
 
     csv_filename = 'control_data.csv' if data_source == 'real' else 'input_data.csv'
+    data_type = "real" if data_source == 'real' else "simulation"
 
-    for subdir, _, _ in os.walk(data_dir):
-        csv_path = os.path.join(subdir, csv_filename)
-        if not os.path.exists(csv_path):
-            dbg_print(f"Warning: CSV file does not exist at path {csv_path}")
-            continue
+    dbg_print(f"Loading data from {data_type}...")
 
-        try:
-            df = pd.read_csv(csv_path)
-            df['subdir'] = subdir  # Add the directory for later access
+    for subdir, _, files in os.walk(data_dir):
+        if csv_filename in files:
+            csv_path = os.path.join(subdir, csv_filename)
+            if not os.path.exists(csv_path):
+                dbg_print(f"Warning: CSV file does not exist at path {csv_path}")
+                continue
 
-            if data_source == 'real':
-                if 'dir' in df.columns:
-                    df = df.rename(
-                        columns={"framecount": "frame_count", "speed": "speed", "angle": "angle", "dir": "image_filename"})
+            try:
+                df = pd.read_csv(csv_path)
+                df['subdir'] = subdir  # Add the directory for later access
+
+                if data_source == 'real':
+                    if 'dir' in df.columns:
+                        df = df.rename(
+                            columns={"framecount": "frame_count", "speed": "speed", "angle": "angle", "dir": "image_filename"})
+                    else:
+                        dbg_print(f"Error: 'dir' column not found in CSV file at {csv_path}")
+                        continue
                 else:
-                    dbg_print(f"Error: 'dir' column not found in CSV file at {csv_path}")
-                    continue
-            else:
-                df['image_filename'] = df['frame_count'].apply(lambda x: f"frame_{x:05d}.png")
+                    df['image_filename'] = df['frame_count'].apply(lambda x: f"frame_{x:05d}.png")
+                    # Assign steering input angle from left_stick_x or right_stick_x
+                    if 'left_stick_x' in df.columns:
+                        df['angle'] = df['left_stick_x']
+                    else:
+                        dbg_print(f"Error: 'left_stick_x' column not found in CSV file at {csv_path}")
+                        continue
 
-            data.append(df)
-        except Exception as e:
-            dbg_print(f"Warning: Cannot read CSV file at {csv_path}: {str(e)}")
+                dbg_print(f"Loaded {len(df)} rows from {csv_path}")
+                data.append(df)
+            except Exception as e:
+                dbg_print(f"Warning: Cannot read CSV file at {csv_path}: {str(e)}")
 
     if len(data) == 0:
         dbg_print("Error: No data was successfully loaded.")
