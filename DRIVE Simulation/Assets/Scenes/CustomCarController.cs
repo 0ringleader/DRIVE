@@ -18,6 +18,7 @@ public class CustomCarController : MonoBehaviour
     public float brakingRate = 50.0f;
     public bool isControlledByWebsite = true;
     public bool resetOnOffRoad = true;
+    public bool autoSwitchScenes = true;
 
     private float currentSplineT = 0.0f; // Fortschritt entlang der Spline
     private UIButtonHandler uiButtonHandler; // Reference to UIButtonHandler

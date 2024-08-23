@@ -2,15 +2,20 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement; // Für das Szenenmanagement
 
 public class OffRoadDetection : MonoBehaviour
 {
     public string roadTag = "RoadMesh";
     private Dictionary<string, bool> wheelStatus;
-    public Text statusText;
-    public CustomCarController carController; // Reference to CustomCarController
+    private Text statusText;
+    private CustomCarController carController; // Reference to CustomCarController
+    private RoadStatusSender roadStatusSender; // Reference to RoadStatusSender
     void Start()
     {
+        statusText = GameObject.Find("OffRoadWarning").GetComponent<Text>();
+        carController = GameObject.Find("CarBody").GetComponent<CustomCarController>();
+        roadStatusSender = GameObject.Find("CarBody").GetComponent<RoadStatusSender>();
         wheelStatus = new Dictionary<string, bool>
         {
             { "WheelHL", true },
@@ -81,48 +86,51 @@ public class OffRoadDetection : MonoBehaviour
 
     void SetOffRoadStatus(bool offRoad, string wheelTag)
     {
+        roadStatusSender.setRoadStatus(offRoad);
         Debug.Log("SetOffRoadStatus aufgerufen: " + offRoad);
         statusText.gameObject.SetActive(true);
         if (offRoad)
         {
             if (wheelTag == null)
             {
-                statusText.text = "Das Auto ist nicht auf der Straße.";
+                statusText.text = "The car is not on the road.";
                 statusText.color = Color.red;
-                Debug.Log("Das Auto ist nicht auf der Straße.");
+                Debug.Log("The car is not on the road.");
             }
             else
             {
-                statusText.text = $"Das Rad {wheelTag} hat die Straße verlassen!";
+                statusText.text = $"The wheel {wheelTag} has left the road!";
                 statusText.color = Color.red;
-                Debug.Log($"Das Rad {wheelTag} hat die Straße verlassen!");
+                Debug.Log($"The wheel {wheelTag} has left the road!");
             }
 
             // Reset the car if resetOnOffRoad is true
-            if (carController != null && carController.resetOnOffRoad)
+            if (carController != null)
             {
-                carController.ResetCar();
+                if (carController.resetOnOffRoad)
+                {
+                    carController.ResetCar();
+                    // Überprüfen, ob der autoSwitchScenes Boolean aktiviert ist
+                    if (carController.autoSwitchScenes)
+                    {
+                        SwitchToRandomTrack();
+                    }
+                }
+                
+
             }
         }
         else
         {
-            statusText.text = "Das Auto ist auf der Straße.";
+            statusText.text = "The car is on the road.";
             statusText.color = new Color(0.0f, 0.5f, 0.0f);
-            Debug.Log("Das Auto ist auf der Straße.");
+            Debug.Log("The car is on the road.");
         }
-    }
-    public bool IsOffRoad()
-    {
-        bool allOnRoad = true;
-        foreach (var status in wheelStatus.Values)
-        {
-            if (!status)
-            {
-                allOnRoad = false;
-                break;
-            }
-        }
-        return !allOnRoad;
     }
 
+    void SwitchToRandomTrack()
+    {
+        GameObject.Find("Canvas").GetComponent<UIButtonHandler>().SwitchToRandomScene(); // Switch to random scene on track();
+    }
+    
 }

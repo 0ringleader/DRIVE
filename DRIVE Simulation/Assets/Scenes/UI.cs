@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement; // Notwendig für Szenenmanagement
 using System.Collections.Generic;
 
 public class UIButtonHandler : MonoBehaviour
@@ -9,16 +10,42 @@ public class UIButtonHandler : MonoBehaviour
     public Texture groundTexture;
     public CustomCarController carController;
     public MJPEGStream mjpegStream;
-    private TextMeshProUGUI fpsText; // Referenz für FPS-Anzeige
+    
+    // UI-Elemente als Instanzvariablen
+    private TextMeshProUGUI fpsText;
     private TextMeshProUGUI mouseWheelText;
     private TextMeshProUGUI speedText;
     private TextMeshProUGUI steeringText;
     private Slider gameSpeedSlider;
     private TextMeshProUGUI gameSpeedText;
     private TMP_Dropdown resolutionDropdown;
+    private Toggle autoSceneSwitchToggle;
+    private Button randomSceneButton;
+    private Toggle toggleTextureToggle;
+    private Button exitButton;
+    private Button resetCarButton;
+    private Toggle controlByWebsiteToggle;
+    private Toggle toggleOffRoadReset;
+    private Toggle syncToGameSpeedToggle;
+    private TextMeshProUGUI offRoadWarning;
+    
     private float deltaTime = 0.0f;
+    private List<string> trackScenes = new List<string>
+    {
+        "Track1",
+        "Track2",
+        "Track3",
+        "Track4",
+        "Track5",
+        "Track6",
+        "Track7",
+        "Track8",
+        "Track9"
+    };
 
-    void Start()
+    private bool isUIVisible = true; // Variable to track UI visibility
+
+        void Start()
     {
         // Find the UI elements in the scene
         mouseWheelText = GameObject.Find("MousewheelText").GetComponent<TextMeshProUGUI>();
@@ -28,14 +55,17 @@ public class UIButtonHandler : MonoBehaviour
         gameSpeedText = GameObject.Find("GameSpeedText").GetComponent<TextMeshProUGUI>();
         resolutionDropdown = GameObject.Find("ResolutionDropdown").GetComponent<TMP_Dropdown>();
         fpsText = GameObject.Find("fpsText").GetComponent<TextMeshProUGUI>();
+        autoSceneSwitchToggle = GameObject.Find("AutoSceneSwitchToggle").GetComponent<Toggle>();
+        randomSceneButton = GameObject.Find("RandomSceneButton").GetComponent<Button>();
 
-        Toggle toggleTextureToggle = GameObject.Find("ToggleTextureToggle").GetComponent<Toggle>();
-        Button exitButton = GameObject.Find("ExitButton").GetComponent<Button>();
-        Button resetCarButton = GameObject.Find("ResetCarButton").GetComponent<Button>();
-        Toggle controlByWebsiteToggle = GameObject.Find("ControlByWebsiteToggle").GetComponent<Toggle>();
-        Toggle toggleOffRoadReset = GameObject.Find("ToggleOffRoadReset").GetComponent<Toggle>();
-        Toggle syncToGameSpeedToggle = GameObject.Find("SyncToGameSpeedToggle").GetComponent<Toggle>();
-        
+        toggleTextureToggle = GameObject.Find("ToggleTextureToggle").GetComponent<Toggle>();
+        exitButton = GameObject.Find("ExitButton").GetComponent<Button>();
+        resetCarButton = GameObject.Find("ResetCarButton").GetComponent<Button>();
+        controlByWebsiteToggle = GameObject.Find("ControlByWebsiteToggle").GetComponent<Toggle>();
+        toggleOffRoadReset = GameObject.Find("ToggleOffRoadReset").GetComponent<Toggle>();
+        syncToGameSpeedToggle = GameObject.Find("SyncToGameSpeedToggle").GetComponent<Toggle>();
+        offRoadWarning = GameObject.Find("OffRoadWarning").GetComponent<TextMeshProUGUI>();
+
         // Add listeners to the toggles and buttons
         toggleTextureToggle.onValueChanged.AddListener(delegate { ToggleGroundTexture(toggleTextureToggle); });
         exitButton.onClick.AddListener(ExitApplication);
@@ -45,6 +75,8 @@ public class UIButtonHandler : MonoBehaviour
         syncToGameSpeedToggle.onValueChanged.AddListener(delegate { ToggleSyncToGameSpeed(syncToGameSpeedToggle); });
         gameSpeedSlider.onValueChanged.AddListener(UpdateGameSpeed);
         resolutionDropdown.onValueChanged.AddListener(delegate { ChangeResolution(resolutionDropdown); });
+        randomSceneButton.onClick.AddListener(SwitchToRandomScene); // Methode für den Random-Szenenwechsel hinzufügen
+        autoSceneSwitchToggle.onValueChanged.AddListener(delegate { ToggleAutoSceneSwitch(autoSceneSwitchToggle); }); // Methode für Auto-Szenenwechsel hinzufügen
 
         PopulateResolutionDropdown();
         ToggleMouseWheelText(controlByWebsiteToggle.isOn);
@@ -62,6 +94,39 @@ public class UIButtonHandler : MonoBehaviour
         {
             fpsText.text = $"FPS: {fps}";
         }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            ExitApplication();
+        }
+
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            ToggleUIVisibility();
+        }
+    }
+
+    void ToggleUIVisibility()
+    {
+        isUIVisible = !isUIVisible;
+
+        // Update the visibility of all UI elements
+        mouseWheelText.gameObject.SetActive(isUIVisible);
+        speedText.gameObject.SetActive(isUIVisible);
+        steeringText.gameObject.SetActive(isUIVisible);
+        gameSpeedSlider.gameObject.SetActive(isUIVisible);
+        gameSpeedText.gameObject.SetActive(isUIVisible);
+        resolutionDropdown.gameObject.SetActive(isUIVisible);
+        fpsText.gameObject.SetActive(isUIVisible);
+        autoSceneSwitchToggle.gameObject.SetActive(isUIVisible);
+        randomSceneButton.gameObject.SetActive(isUIVisible);
+        toggleTextureToggle.gameObject.SetActive(isUIVisible);
+        exitButton.gameObject.SetActive(isUIVisible);
+        resetCarButton.gameObject.SetActive(isUIVisible);
+        controlByWebsiteToggle.gameObject.SetActive(isUIVisible);
+        toggleOffRoadReset.gameObject.SetActive(isUIVisible);
+        syncToGameSpeedToggle.gameObject.SetActive(isUIVisible);
+        offRoadWarning.gameObject.SetActive(isUIVisible);
     }
 
     void PopulateResolutionDropdown()
@@ -143,6 +208,11 @@ public class UIButtonHandler : MonoBehaviour
         }
     }
 
+    void ToggleAutoSceneSwitch(Toggle toggle)
+    {
+        carController.autoSwitchScenes = toggle.isOn; // Den Status des Auto-Switch-Toggles speichern
+    }
+
     public void UpdateSpeedText(float speed, float mappedSpeed)
     {
         if (speedText != null)
@@ -177,5 +247,20 @@ public class UIButtonHandler : MonoBehaviour
     void ChangeResolution(TMP_Dropdown dropdown)
     {
         SetResolution(dropdown.value);
+    }
+
+    public void SwitchToRandomScene()
+    {
+        // Falls keine Track-Szenen vorhanden sind
+        if (trackScenes.Count == 0)
+        {
+            Debug.LogWarning("Keine Track-Szenen gefunden.");
+            return;
+        }
+
+        carController.ResetCar();
+        // Zufällige Szene auswählen
+        int randomIndex = Random.Range(0, trackScenes.Count);
+        SceneManager.LoadScene(trackScenes[randomIndex]);
     }
 }

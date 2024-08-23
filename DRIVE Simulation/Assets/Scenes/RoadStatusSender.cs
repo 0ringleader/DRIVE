@@ -7,10 +7,12 @@ using UnityEngine;
 public class RoadStatusSender : MonoBehaviour
 {
     public int port = 8000;
-    public OffRoadDetection offRoadDetection;
-
     private HttpListener httpListener;
     private bool isRunning;
+    private bool isOffRoad;
+
+    // Counter for failures
+    private int failureCount = 0;
 
     void Start()
     {
@@ -57,11 +59,9 @@ public class RoadStatusSender : MonoBehaviour
 
         try
         {
-            // Get the current OffRoad status from the OffRoadDetection script
-            bool isOffRoad = offRoadDetection.IsOffRoad();  // You need to implement IsOffRoad() in OffRoadDetection
 
-            // Create a JSON string representing the status
-            string jsonResponse = $"{{ \"offRoad\": {isOffRoad.ToString().ToLower()} }}";
+            // Create a JSON string representing the status and failure count
+            string jsonResponse = $"{{ \"offRoad\": {isOffRoad.ToString().ToLower()}, \"failureCount\": {failureCount} }}";
             byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonResponse);
 
             response.OutputStream.Write(jsonBytes, 0, jsonBytes.Length);
@@ -87,6 +87,15 @@ public class RoadStatusSender : MonoBehaviour
         {
             httpListener.Stop();
             httpListener.Close();
+        }
+    }
+    
+    public void setRoadStatus(bool offRoad)
+    {
+        isOffRoad = offRoad;
+        if (offRoad)
+        {
+            failureCount++;
         }
     }
 }
