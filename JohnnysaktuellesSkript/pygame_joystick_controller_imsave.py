@@ -52,7 +52,7 @@ def process_image_and_control(frame):
     frame = cv2.medianBlur(frame, 3)
     frame = cv2.flip(frame, 1, frame)
 
-    frame = np.rot90(frame, 3)  # Drehen Sie das Bild, falls nötig
+    frame = cv2.rotate(frame, cv2.ROTATE_180)  # Drehen Sie das Bild, falls nötig
     # Save image to /preCalc naming it with <numbering>_<steeringval>_<speedval> as a .png
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S%f")
 
