@@ -19,6 +19,7 @@ public class CustomCarController : MonoBehaviour
     public bool isControlledByWebsite = true;
     public bool resetOnOffRoad = true;
     public bool autoSwitchScenes = true;
+    public bool randomizeStartingDirection = true;
 
     private float currentSplineT = 0.0f; // Fortschritt entlang der Spline
     private UIButtonHandler uiButtonHandler; // Reference to UIButtonHandler
@@ -114,7 +115,14 @@ void Update()
         steering = 0.0f; // Reset steering
         //targetSpeed = 0.0f; // Reset target speed
         //targetSteering = 0.0f; // Reset target steering
-        transform.rotation = Quaternion.identity; // Reset rotation
+        if (randomizeStartingDirection && UnityEngine.Random.value > 0.5f)
+        {
+            transform.rotation = Quaternion.Euler(0, 180, 0); // Randomize rotation
+        }
+        else
+        {
+            transform.rotation = Quaternion.identity; // Reset rotation
+        }
     }
 
     public void SetControlValues(float speed, float steering)

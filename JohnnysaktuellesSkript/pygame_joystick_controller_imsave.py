@@ -52,7 +52,7 @@ def process_image_and_control(frame):
     frame = cv2.medianBlur(frame, 3)
     frame = cv2.flip(frame, 1, frame)
 
-    frame = cv2.rotate(frame, cv2.ROTATE_180)  # Drehen Sie das Bild, falls nötig
+    #frame = cv2.rotate(frame, cv2.ROTATE_180)  # Drehen Sie das Bild, falls nötig
     # Save image to /preCalc naming it with <numbering>_<steeringval>_<speedval> as a .png
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S%f")
 
@@ -60,13 +60,13 @@ def process_image_and_control(frame):
     filename = f"{framecount}.png"
     save_control_data(framecount, timestamp, current_speed, current_angle, filename)
     print(f'saved to {filename}')
-    # cv2.imwrite(os.path.join(outputdir, filename), frame)
+    cv2.imwrite(os.path.join(outputdir, filename), frame)
     frame = pygame.surfarray.make_surface(frame)
     screen.blit(frame, (0, 0))
     pygame.display.update()
 
-#car_control = CarControl('192.168.1.162', 8000, 'http://192.168.1.162:8000/stream')
-car_control = CarControl('10.42.0.1', 8000, 'http://10.42.0.1:8000/stream')
+car_control = CarControl('192.168.1.59', 8000, 'http://192.168.1.59:8000/stream')
+#car_control = CarControl('10.42.0.1', 8000, 'http://10.42.0.1:8000/stream')
 pygame.joystick.init()
 joystick = pygame.joystick.Joystick(0)
 joystick.init()
@@ -113,6 +113,7 @@ try:
         frame = car_control.read_frame()
         if frame is not None:
             process_image_and_control(frame)
+            #print("mpiep")
         else:
             print("frame is none!")
 except KeyboardInterrupt:

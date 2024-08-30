@@ -1,9 +1,12 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement; // Notwendig für Szenenmanagement
 using System.Collections.Generic;
 using static System.Net.Mime.MediaTypeNames;
+using Application = UnityEngine.Application;
+using Random = UnityEngine.Random;
 
 public class UIButtonHandler : MonoBehaviour
 {
@@ -29,6 +32,7 @@ public class UIButtonHandler : MonoBehaviour
     private Toggle toggleOffRoadReset;
     private Toggle syncToGameSpeedToggle;
     private TextMeshProUGUI offRoadWarning;
+    private Toggle randStartDirToggle;
     
     private float deltaTime = 0.0f;
     private List<string> trackScenes = new List<string>
@@ -46,11 +50,12 @@ public class UIButtonHandler : MonoBehaviour
 
     private bool isUIVisible = true; // Variable to track UI visibility
 
-        void Awake()
+  /*  private void Awake()
     {
         UnityEngine.Application.targetFrameRate = 120;
     }
-        void Start()
+*/
+    void Start()
     {
         // Find the UI elements in the scene
         mouseWheelText = GameObject.Find("MousewheelText").GetComponent<TextMeshProUGUI>();
@@ -70,6 +75,7 @@ public class UIButtonHandler : MonoBehaviour
         toggleOffRoadReset = GameObject.Find("ToggleOffRoadReset").GetComponent<Toggle>();
         syncToGameSpeedToggle = GameObject.Find("SyncToGameSpeedToggle").GetComponent<Toggle>();
         offRoadWarning = GameObject.Find("OffRoadWarning").GetComponent<TextMeshProUGUI>();
+        randStartDirToggle = GameObject.Find("RandStartDirToggle").GetComponent<Toggle>();
 
         // Add listeners to the toggles and buttons
         toggleTextureToggle.onValueChanged.AddListener(delegate { ToggleGroundTexture(toggleTextureToggle); });
@@ -82,7 +88,8 @@ public class UIButtonHandler : MonoBehaviour
         resolutionDropdown.onValueChanged.AddListener(delegate { ChangeResolution(resolutionDropdown); });
         randomSceneButton.onClick.AddListener(SwitchToRandomScene); // Methode für den Random-Szenenwechsel hinzufügen
         autoSceneSwitchToggle.onValueChanged.AddListener(delegate { ToggleAutoSceneSwitch(autoSceneSwitchToggle); }); // Methode für Auto-Szenenwechsel hinzufügen
-
+randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomizeStartingDirection = randStartDirToggle.isOn; });
+        
         PopulateResolutionDropdown();
         ToggleMouseWheelText(controlByWebsiteToggle.isOn);
         UpdateGameSpeed(gameSpeedSlider.value);
