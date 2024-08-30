@@ -48,7 +48,7 @@ public class UIButtonHandler : MonoBehaviour
 
         void Awake()
     {
-        Application.targetFrameRate = 120;
+        UnityEngine.Application.targetFrameRate = 120;
     }
         void Start()
     {
@@ -169,7 +169,7 @@ public class UIButtonHandler : MonoBehaviour
 
     void ExitApplication()
     {
-        Application.Quit();
+        UnityEngine.Application.Quit();
     }
 
     void ResetCar()
