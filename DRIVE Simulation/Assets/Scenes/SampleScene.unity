@@ -764,6 +764,7 @@ MonoBehaviour:
   isControlledByWebsite: 1
   resetOnOffRoad: 1
   autoSwitchScenes: 1
+  randomizeStartingDirection: 1
 --- !u!54 &1125947879
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -949,7 +950,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4774438966833772624, guid: 42ce2d68fb80a795b8dc62ffe144a595, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 244.9
+      value: 287.2
       objectReference: {fileID: 0}
     - target: {fileID: 6798272271244865190, guid: 42ce2d68fb80a795b8dc62ffe144a595, type: 3}
       propertyPath: m_Pivot.x
