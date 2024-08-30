@@ -2,9 +2,8 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using UnityEngine.SceneManagement; // Notwendig für Szenenmanagement
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-using static System.Net.Mime.MediaTypeNames;
 using Application = UnityEngine.Application;
 using Random = UnityEngine.Random;
 
@@ -15,7 +14,7 @@ public class UIButtonHandler : MonoBehaviour
     public CustomCarController carController;
     public MJPEGStream mjpegStream;
     
-    // UI-Elemente als Instanzvariablen
+    // UI elements
     private TextMeshProUGUI fpsText;
     private TextMeshProUGUI mouseWheelText;
     private TextMeshProUGUI speedText;
@@ -34,8 +33,8 @@ public class UIButtonHandler : MonoBehaviour
     private TextMeshProUGUI offRoadWarning;
     private Toggle randStartDirToggle;
     
-    private float deltaTime = 0.0f;
-    private List<string> trackScenes = new List<string>
+    private float deltaTime = 0.0f; // For FPS calculation
+    private List<string> trackScenes = new List<string> // List of available track scenes
     {
         "Track1",
         "Track2",
@@ -48,13 +47,8 @@ public class UIButtonHandler : MonoBehaviour
         "Track9"
     };
 
-    private bool isUIVisible = true; // Variable to track UI visibility
+    private bool isUIVisible = true;
 
-  /*  private void Awake()
-    {
-        UnityEngine.Application.targetFrameRate = 120;
-    }
-*/
     void Start()
     {
         // Find the UI elements in the scene
@@ -67,7 +61,6 @@ public class UIButtonHandler : MonoBehaviour
         fpsText = GameObject.Find("fpsText").GetComponent<TextMeshProUGUI>();
         autoSceneSwitchToggle = GameObject.Find("AutoSceneSwitchToggle").GetComponent<Toggle>();
         randomSceneButton = GameObject.Find("RandomSceneButton").GetComponent<Button>();
-
         toggleTextureToggle = GameObject.Find("ToggleTextureToggle").GetComponent<Toggle>();
         exitButton = GameObject.Find("ExitButton").GetComponent<Button>();
         resetCarButton = GameObject.Find("ResetCarButton").GetComponent<Button>();
@@ -77,7 +70,7 @@ public class UIButtonHandler : MonoBehaviour
         offRoadWarning = GameObject.Find("OffRoadWarning").GetComponent<TextMeshProUGUI>();
         randStartDirToggle = GameObject.Find("RandStartDirToggle").GetComponent<Toggle>();
 
-        // Add listeners to the toggles and buttons
+        // Add listeners to the UI elements
         toggleTextureToggle.onValueChanged.AddListener(delegate { ToggleGroundTexture(toggleTextureToggle); });
         exitButton.onClick.AddListener(ExitApplication);
         resetCarButton.onClick.AddListener(ResetCar);
@@ -86,10 +79,11 @@ public class UIButtonHandler : MonoBehaviour
         syncToGameSpeedToggle.onValueChanged.AddListener(delegate { ToggleSyncToGameSpeed(syncToGameSpeedToggle); });
         gameSpeedSlider.onValueChanged.AddListener(UpdateGameSpeed);
         resolutionDropdown.onValueChanged.AddListener(delegate { ChangeResolution(resolutionDropdown); });
-        randomSceneButton.onClick.AddListener(SwitchToRandomScene); // Methode für den Random-Szenenwechsel hinzufügen
-        autoSceneSwitchToggle.onValueChanged.AddListener(delegate { ToggleAutoSceneSwitch(autoSceneSwitchToggle); }); // Methode für Auto-Szenenwechsel hinzufügen
-randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomizeStartingDirection = randStartDirToggle.isOn; });
+        randomSceneButton.onClick.AddListener(SwitchToRandomScene);
+        autoSceneSwitchToggle.onValueChanged.AddListener(delegate { ToggleAutoSceneSwitch(autoSceneSwitchToggle); });
+        randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomizeStartingDirection = randStartDirToggle.isOn; });
         
+        // Initialize UI elements
         PopulateResolutionDropdown();
         ToggleMouseWheelText(controlByWebsiteToggle.isOn);
         UpdateGameSpeed(gameSpeedSlider.value);
@@ -99,7 +93,6 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
     {
         // Update FPS
         deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
-
         int fps = Mathf.RoundToInt(1.0f / deltaTime);
 
         if (fpsText != null)
@@ -107,22 +100,24 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
             fpsText.text = $"FPS: {fps}";
         }
 
+        // Exit application when Escape key is pressed
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             ExitApplication();
         }
 
+        // Toggle UI visibility when 'H' key is pressed
         if (Input.GetKeyDown(KeyCode.H))
         {
             ToggleUIVisibility();
         }
     }
 
+    // Toggles the visibility of the UI
     void ToggleUIVisibility()
     {
         isUIVisible = !isUIVisible;
 
-        // Update the visibility of all UI elements
         mouseWheelText.gameObject.SetActive(isUIVisible);
         speedText.gameObject.SetActive(isUIVisible);
         steeringText.gameObject.SetActive(isUIVisible);
@@ -141,6 +136,7 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         offRoadWarning.gameObject.SetActive(isUIVisible);
     }
 
+    // Adds the available resolutions to the dropdown menu
     void PopulateResolutionDropdown()
     {
         resolutionDropdown.ClearOptions();
@@ -156,12 +152,14 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         resolutionDropdown.AddOptions(options);
     }
 
+    // Sets the screen resolution
     void SetResolution(int resolutionIndex)
     {
         Resolution resolution = Screen.resolutions[resolutionIndex];
         Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreen);
     }
 
+    // Toggles the ground texture on or off in the case the ground confuses the algorithm
     void ToggleGroundTexture(Toggle toggle)
     {
         if (toggle.isOn)
@@ -174,11 +172,13 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         }
     }
 
+    // Exits the application
     void ExitApplication()
     {
-        UnityEngine.Application.Quit();
+        Application.Quit();
     }
 
+    // Resets the car's position and orientation
     void ResetCar()
     {
         if (carController != null)
@@ -187,6 +187,7 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         }
     }
 
+    // Toggles control of the car via JSON input
     void ToggleControlByWebsite(Toggle toggle)
     {
         if (carController != null)
@@ -196,6 +197,7 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         ToggleMouseWheelText(toggle.isOn);
     }
 
+    // Updates the control tips
     void ToggleMouseWheelText(bool isControlledByWebsite)
     {
         if (mouseWheelText != null)
@@ -204,6 +206,7 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         }
     }
 
+    // Toggles whether the car should reset when it goes off-road
     void ToggleOffRoadReset(Toggle toggle)
     {
         if (carController != null)
@@ -212,6 +215,7 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         }
     }
 
+    // Toggles syncing the stream's frame rate with the simulation speed to send more data to the training networks accordingly
     void ToggleSyncToGameSpeed(Toggle toggle)
     {
         if (mjpegStream != null)
@@ -220,11 +224,13 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         }
     }
 
+    // Toggles automatic scene switching
     void ToggleAutoSceneSwitch(Toggle toggle)
     {
-        carController.autoSwitchScenes = toggle.isOn; // Den Status des Auto-Switch-Toggles speichern
+        carController.autoSwitchScenes = toggle.isOn;
     }
 
+    // Updates the speed text displayed in the UI
     public void UpdateSpeedText(float speed, float mappedSpeed)
     {
         if (speedText != null)
@@ -233,6 +239,7 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         }
     }
 
+    // Updates the steering text displayed in the UI
     public void UpdateSteeringText(float steering, float mappedSteering)
     {
         if (steeringText != null)
@@ -241,6 +248,7 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         }
     }
 
+    // Updates the simulation speed and reflects the change in the UI and stream
     void UpdateGameSpeed(float newSpeed)
     {
         newSpeed = newSpeed / 10f;
@@ -256,22 +264,22 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
         }
     }
 
+    // Changes the screen resolution based on the dropdown selection
     void ChangeResolution(TMP_Dropdown dropdown)
     {
         SetResolution(dropdown.value);
     }
 
+    // Switches to a random track scene
     public void SwitchToRandomScene()
     {
-        // Falls keine Track-Szenen vorhanden sind
         if (trackScenes.Count == 0)
         {
-            Debug.LogWarning("Keine Track-Szenen gefunden.");
+            Debug.LogWarning("No track scenes found.");
             return;
         }
 
         carController.ResetCar();
-        // Zufällige Szene auswählen
         int randomIndex = Random.Range(0, trackScenes.Count);
         SceneManager.LoadScene(trackScenes[randomIndex]);
     }

@@ -6,7 +6,7 @@ public class PersistentObject : MonoBehaviour
 {
     private void Awake()
     {
-        DontDestroyOnLoad(gameObject); // Verhindert, dass dieses Objekt bei Szenenwechseln gelöscht wird
+        DontDestroyOnLoad(gameObject); // prevents the object from being destroyed when loading a new scene
     }
 }
 

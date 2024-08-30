@@ -11,7 +11,7 @@ public class RoadStatusSender : MonoBehaviour
     private bool isRunning;
     private bool isOffRoad;
 
-    // Counter for failures
+    // Counter for times the car went off road as the boolean cant be checked fast enough by training clients
     private int failureCount = 0;
 
     void Start()
