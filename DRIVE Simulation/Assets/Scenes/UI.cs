@@ -176,7 +176,7 @@ randStartDirToggle.onValueChanged.AddListener(delegate { carController.randomize
 
     void ExitApplication()
     {
-        Application.Quit();
+        UnityEngine.Application.Quit();
     }
 
     void ResetCar()
