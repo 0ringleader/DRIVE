@@ -1,3 +1,7 @@
+// Author: Alina Krasnobaieva, Felix Kirch
+// Date: 20.08.2024
+// Description: This script contains the UI elements and takes over application handling
+
 using System;
 using UnityEngine;
 using UnityEngine.UI;

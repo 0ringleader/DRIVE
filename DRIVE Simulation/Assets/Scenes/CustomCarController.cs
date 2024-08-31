@@ -1,3 +1,7 @@
+// Author: Felix Kirch
+// Date: 14.06.2024
+// Description: Controls the physical movement of the car based on user input or external control via JSON data
+
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;

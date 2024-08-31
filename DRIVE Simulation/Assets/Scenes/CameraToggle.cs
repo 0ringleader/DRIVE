@@ -1,3 +1,7 @@
+// Author: Felix Kirch
+// Date: 23.08.2024
+// Description: Toggle the rendering of the camera for the main application (excluding the rendering for the stream)
+
 using UnityEngine;
 
 public class CameraToggle : MonoBehaviour

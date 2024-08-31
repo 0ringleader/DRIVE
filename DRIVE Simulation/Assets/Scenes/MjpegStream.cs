@@ -1,3 +1,7 @@
+// Author: Felix Kirch
+// Date: 08.08.2024
+// Description: This script captures screenshots of the camera view and sends them as an MJPEG stream to the clients.
+
 using System;
 using System.IO;
 using System.Net;
