@@ -8,6 +8,7 @@ using UnityEngine;
 
 public class MJPEGStream : MonoBehaviour
 {
+    // Stream configuration
     public int port = 8000;
     public string subdir = "stream";
     public Camera cameraToCapture;
@@ -15,29 +16,31 @@ public class MJPEGStream : MonoBehaviour
     public int height = 225;
     public float frameRate = 10f; // Frame rate in frames per second
     private float frameDuration; // Duration of one frame in milliseconds
-    public bool rotateImage = true; // Boolean to determine if the image should be rotated
-    public bool syncToGameSpeed = false;
+    public bool rotateImage = true; // Determines if the image should be rotated
+    public bool syncToGameSpeed = false; // Sync frame rate to the simulation's speed
     private float gameSpeed = 1f;
+
 
     private HttpListener httpListener;
     private bool isStreaming;
     private RenderTexture renderTexture;
     private Texture2D screenshot;
-    private readonly object frameLock = new object();
-    private byte[] latestFrame = null;
+    private readonly object frameLock = new object(); // Lock object for thread safety
+    private byte[] latestFrame = null; // Latest frame to be sent to clients
 
     void Start()
     {
         // Ensure Unity continues running even when the game window is not in focus
         Application.runInBackground = true;
 
-        // Initialize RenderTexture and Texture2D on the main thread
+        // Initialize RenderTexture and Texture2D
         renderTexture = new RenderTexture(width, height, 24);
         screenshot = new Texture2D(width, height, TextureFormat.RGB24, false);
 
         // Compute the frame duration based on the desired frame rate
         frameDuration = 1000f / frameRate;
 
+        // Start the server and begin capturing frames
         StartServer();
         StartCoroutine(CaptureFrames());
     }
@@ -50,7 +53,8 @@ public class MJPEGStream : MonoBehaviour
         httpListener.Start();
         isStreaming = true;
 
-        // Run the HttpListener in a separate thread
+        // Run the HttpListener in a separate thread to not interrupt Unity's main thread
+        // I had a lot of freezes when running the HttpListener in the main thread
         new Thread(() =>
         {
             while (isStreaming)
@@ -89,12 +93,14 @@ public class MJPEGStream : MonoBehaviour
                     jpegData = latestFrame;
                 }
 
+                // If no frame is ready, wait briefly before retrying
                 if (jpegData == null)
                 {
                     Thread.Sleep(10);
                     continue;
                 }
 
+                // Write the JPEG frame to the response stream
                 string header = "\r\n--boundary\r\nContent-Type: image/jpeg\r\nContent-Length: " + jpegData.Length + "\r\n\r\n";
                 byte[] headerBytes = Encoding.ASCII.GetBytes(header);
 
@@ -103,7 +109,7 @@ public class MJPEGStream : MonoBehaviour
                 response.OutputStream.Flush();
                 Debug.Log("Frame sent.");
 
-                // Sleep for the frame duration to control the frame rate
+                // Control the frame rate based on simulations speed to send more or less data to neural networks accordingly
                 if (syncToGameSpeed)
                 {
                     Thread.Sleep((int)(frameDuration / gameSpeed));
@@ -111,9 +117,7 @@ public class MJPEGStream : MonoBehaviour
                 else
                 {
                     Thread.Sleep((int)frameDuration);
-                    
                 }
-                
             }
         }
         catch (Exception ex)
@@ -133,6 +137,7 @@ public class MJPEGStream : MonoBehaviour
         {
             yield return new WaitForEndOfFrame();
 
+            // Capture the frame from the camera
             cameraToCapture.targetTexture = renderTexture;
             cameraToCapture.Render();
 
@@ -140,7 +145,7 @@ public class MJPEGStream : MonoBehaviour
             screenshot.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             screenshot.Apply();
 
-            // Conditionally rotate the Texture2D
+            // Optionally rotate the captured image (real camera is mounted upside down)
             if (rotateImage)
             {
                 RotateTexture(screenshot);
@@ -150,6 +155,7 @@ public class MJPEGStream : MonoBehaviour
             cameraToCapture.targetTexture = null;
             RenderTexture.active = null;
 
+            // Store the frame in a thread-safe manner
             lock (frameLock)
             {
                 latestFrame = bytes;
@@ -157,6 +163,7 @@ public class MJPEGStream : MonoBehaviour
         }
     }
 
+    // Rotates the captured Texture2D image by 180 degrees
     void RotateTexture(Texture2D texture)
     {
         Color[] pixels = texture.GetPixels();
@@ -174,7 +181,7 @@ public class MJPEGStream : MonoBehaviour
         texture.Apply();
     }
 
-
+    // Stops the server when the application is closed
     void OnApplicationQuit()
     {
         Debug.Log("Stopping server...");
@@ -185,6 +192,8 @@ public class MJPEGStream : MonoBehaviour
             httpListener.Close();
         }
     }
+
+    // Adjusts the simulation speed, affecting the frame rate if syncToGameSpeed is true
     public void setGameSpeed(float speed)
     {
         gameSpeed = speed;

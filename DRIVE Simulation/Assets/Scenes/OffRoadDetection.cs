@@ -2,15 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement; // Für das Szenenmanagement
+using UnityEngine.SceneManagement;
 
 public class OffRoadDetection : MonoBehaviour
 {
     public string roadTag = "RoadMesh";
     private Dictionary<string, bool> wheelStatus;
     private Text statusText;
-    private CustomCarController carController; // Reference to CustomCarController
-    private RoadStatusSender roadStatusSender; // Reference to RoadStatusSender
+    private CustomCarController carController;
+    private RoadStatusSender roadStatusSender;
     void Start()
     {
         statusText = GameObject.Find("OffRoadWarning").GetComponent<Text>();
@@ -110,7 +110,6 @@ public class OffRoadDetection : MonoBehaviour
                 if (carController.resetOnOffRoad)
                 {
                     carController.ResetCar();
-                    // Überprüfen, ob der autoSwitchScenes Boolean aktiviert ist
                     if (carController.autoSwitchScenes)
                     {
                         SwitchToRandomTrack();

@@ -4,119 +4,128 @@ using UnityEngine.Splines;
 
 public class CustomCarController : MonoBehaviour
 {
-    public float targetSpeed; // Geschwindigkeitsvariable
-    public float targetSteering; // Lenkvariable
+    // Ccar control
+    public float targetSpeed; // desired speed (manipulated by JSON data)
+    public float targetSteering; //desiered steering value
     public Transform frontWheelLeft;
     public Transform frontWheelRight;
+
+    // Constants for physical car dynamics
     private readonly float maxSpeed = 0.8f;
     private readonly float maxSteering = 19.0f;
     private readonly float wheelbase = 0.1375f;
-    private float steering = 0.0f;
-    private float speed = 0.0f;
     public float steeringMotorSpeed = 60.0f;
     public float accelerationRate = 10.0f;
     public float brakingRate = 50.0f;
+
+    // Initial state of the car
+    private float steering = 0.0f;
+    private float speed = 0.0f;
+
+    // Configuration
     public bool isControlledByWebsite = true;
     public bool resetOnOffRoad = true;
     public bool autoSwitchScenes = true;
+    public bool randomizeStartingDirection = true;
 
-    private float currentSplineT = 0.0f; // Fortschritt entlang der Spline
-    private UIButtonHandler uiButtonHandler; // Reference to UIButtonHandler
 
-    // Start is called before the first frame update
+    private UIButtonHandler uiButtonHandler;
+
+    // Initialization
     private void Start()
     {
-        targetSpeed = 0.0f; // Initialisieren Sie die Geschwindigkeit auf 0
-        targetSteering = 0.0f; // Initialisieren Sie die Lenkung auf 0
-        currentSplineT = 0.0f; // Initialisieren des Fortschritts auf der Spline
+        targetSpeed = 0.0f; 
+        targetSteering = 0.0f; 
         uiButtonHandler = FindObjectOfType<UIButtonHandler>(); // Find the UIButtonHandler in the scene
     }
 
     // Update is called once per frame
-void Update()
-{
-    if (!isControlledByWebsite)
+    private void Update()
     {
-        // Abfrage des Inputs vom Mausrad
-        float mouseWheelInput = Input.GetAxis("Mouse ScrollWheel");
-        // Abfrage des Inputs von den Pfeiltasten (oder einem Gamepad)
-        float arrowKeyInput = Input.GetAxis("Vertical");
-
-        // Wenn ein Pfeiltasten-Eingang vorliegt, verwende diesen, um die Zielgeschwindigkeit direkt zu setzen
-        if (Mathf.Abs(arrowKeyInput) > Mathf.Epsilon)
+        if (!isControlledByWebsite)
         {
-            targetSpeed = arrowKeyInput * maxSpeed;
+            // Handle input for speed and steering
+            float mouseWheelInput = Input.GetAxis("Mouse ScrollWheel");
+            float arrowKeyInput = Input.GetAxis("Vertical");
+
+            // Direct speed control with arrow keys
+            if (Mathf.Abs(arrowKeyInput) > Mathf.Epsilon)
+            {
+                targetSpeed = arrowKeyInput * maxSpeed;
+            }
+            // Adjust speed incrementally with mouse wheel
+            else if (Mathf.Abs(mouseWheelInput) > Mathf.Epsilon)
+            {
+                targetSpeed += mouseWheelInput;
+                targetSpeed = Mathf.Clamp(targetSpeed, -maxSpeed, maxSpeed);
+            }
+
+            // Steering is controlled with the horizontal axis (arrow keys or gamepad)
+            targetSteering = Input.GetAxis("Horizontal") * maxSteering;
         }
-        // Wenn das Mausrad benutzt wird, addiere den Wert zu targetSpeed
-        else if (Mathf.Abs(mouseWheelInput) > Mathf.Epsilon)
+
+        // Reset car position and state on 'R' key press
+        if (Input.GetKeyDown(KeyCode.R))
         {
-            targetSpeed += mouseWheelInput;
-            targetSpeed = Mathf.Clamp(targetSpeed, -maxSpeed, maxSpeed); // Clamping um sicherzustellen, dass targetSpeed im erlaubten Bereich bleibt
+            ResetCar();
         }
 
-        // Die Lenkung wird weiterhin mit den Pfeiltasten gesteuert
-        targetSteering = Input.GetAxis("Horizontal") * maxSteering;
+        // Update steering and speed
+        UpdateSteering();
+        UpdateSpeed();
+
+        // Move the car forward
+        var movement = transform.forward * speed * Time.deltaTime;
+        transform.position += movement;
+
+        // Rotate front wheel models
+        frontWheelLeft.localEulerAngles = new Vector3(0, 0, steering + 90);
+        frontWheelRight.localEulerAngles = new Vector3(0, 0, steering + 90);
+
+        // Calculate steering angle and rotate car around the rotation point
+        var rotationPoint = new Vector3(0, 0, -0.0675f);
+        var steeringAngle = steering / wheelbase;
+        transform.RotateAround(transform.TransformPoint(rotationPoint), Vector3.up, steeringAngle * speed * Time.deltaTime);
+
+        // Clamp steering and speed to their maximum values
+        steering = Mathf.Clamp(steering, -maxSteering, maxSteering);
+        speed = Mathf.Clamp(speed, -maxSpeed, maxSpeed);
+
+        // Reset the car if it falls off the ground plane
+        if (transform.position.y < -1)
+        {
+            ResetCar();
+        }
+
+        // Update UI elements
+        if (uiButtonHandler != null)
+        {
+            float mappedSpeed = MapValue(targetSpeed, -maxSpeed, maxSpeed, -100, 100);
+            float mappedSteering = MapValue(targetSteering, -maxSteering, maxSteering, -100, 100);
+            uiButtonHandler.UpdateSpeedText(speed, mappedSpeed);
+            uiButtonHandler.UpdateSteeringText(steering, mappedSteering);
+        }
     }
 
-    if (Input.GetKeyDown(KeyCode.R))
-    {
-        ResetCar(); // Aufruf der ResetCar-Methode bei Druck der 'R'-Taste
-    }
-
-    UpdateSteering(); // Aktualisierung der Lenkung
-    UpdateSpeed();    // Aktualisierung der Geschwindigkeit
-
-    // Bewegung des Autos
-    var movement = transform.forward * speed * Time.deltaTime;
-    transform.position += movement;
-
-    // Drehung der Vorderräder
-    frontWheelLeft.localEulerAngles = new Vector3(0, 0, steering + 90);
-    frontWheelRight.localEulerAngles = new Vector3(0, 0, steering + 90);
-
-    // Berechnung des Rotationspunkts
-    var rotationPoint = new Vector3(0, 0, -0.0675f);
-
-    // Berechnung des Lenkwinkels
-    var steeringAngle = steering / wheelbase;
-
-    // Drehung des Autos um den Rotationspunkt
-    transform.RotateAround(transform.TransformPoint(rotationPoint), Vector3.up,
-        steeringAngle * speed * Time.deltaTime);
-
-    // Begrenzung der Lenkung
-    steering = Mathf.Clamp(steering, -maxSteering, maxSteering);
-
-    // Begrenzung der Geschwindigkeit
-    speed = Mathf.Clamp(speed, -maxSpeed, maxSpeed);
-
-    // Überprüfung, ob das Auto unter y = -1 ist und falls notwendig zurücksetzen
-    if (transform.position.y < -1)
-    {
-        ResetCar();
-    }
-
-    // Aktualisierung der UI-Elemente
-    if (uiButtonHandler != null)
-    {
-        float mappedSpeed = MapValue(targetSpeed, -maxSpeed, maxSpeed, -100, 100);
-        float mappedSteering = MapValue(targetSteering, -maxSteering, maxSteering, -100, 100);
-        uiButtonHandler.UpdateSpeedText(speed, mappedSpeed);
-        uiButtonHandler.UpdateSteeringText(steering, mappedSteering);
-    }
-}
-
-
+    // Resets the car to its initial position and state
     public void ResetCar()
     {
-        transform.position = new Vector3(0, -0.199f, 0); // Reset position to (0,-0.199,0)
-        speed = 0.0f; // Reset speed
-        steering = 0.0f; // Reset steering
-        //targetSpeed = 0.0f; // Reset target speed
-        //targetSteering = 0.0f; // Reset target steering
-        transform.rotation = Quaternion.identity; // Reset rotation
+        transform.position = new Vector3(0, -0.199f, 0); 
+        speed = 0.0f; 
+        steering = 0.0f; 
+
+        // Randomize starting direction (circuit direction)
+        if (randomizeStartingDirection && UnityEngine.Random.value > 0.5f)
+        {
+            transform.rotation = Quaternion.Euler(0, 180, 0); 
+        }
+        else
+        {
+            transform.rotation = Quaternion.identity; 
+        }
     }
 
+    // Set control values from an external source
     public void SetControlValues(float speed, float steering)
     {
         if (isControlledByWebsite)
@@ -127,26 +136,23 @@ void Update()
         }
     }
 
+    // Maps control values to physical values
     float MapValue(float value, float fromSource, float toSource, float fromTarget, float toTarget)
     {
         return (value - fromSource) / (toSource - fromSource) * (toTarget - fromTarget) + fromTarget;
     }
 
+    // Smoothly updates the steering angle
     void UpdateSteering()
     {
         steering = Mathf.MoveTowards(steering, targetSteering, steeringMotorSpeed * Time.deltaTime);
     }
 
+    // Smoothly updates the speed, considering acceleration or braking
     void UpdateSpeed()
     {
-        // Bestimme, ob das Auto beschleunigt oder bremst
         bool isAccelerating = (targetSpeed > speed && speed >= 0) || (targetSpeed < speed && speed <= 0);
-    
-        // Verwende die Beschleunigungsrate, wenn das Auto beschleunigt, andernfalls die Bremsrate
         float rate = isAccelerating ? accelerationRate : brakingRate;
-
-        // Aktualisiere die Geschwindigkeit mit der korrekten Rate
         speed = Mathf.MoveTowards(speed, targetSpeed, rate * Time.deltaTime);
     }
-
 }
